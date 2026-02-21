@@ -1,8 +1,8 @@
 """
-Grok-Powered Nudge System
+Groq-Powered Nudge System
 =========================
 
-Generates personalized health nudges using Grok AI API.
+Generates personalized health nudges using Groq AI API.
 Replaces static templates with dynamic, context-aware messages.
 
 Features:
@@ -28,9 +28,9 @@ import httpx
 from .zones import Zone, ZoneInfo
 
 
-# Grok API configuration
-GROK_API_URL = "https://api.x.ai/v1/chat/completions"
-GROK_MODEL = "grok-3-latest"
+# Groq API configuration
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
 class Language(Enum):
@@ -145,12 +145,12 @@ FALLBACK_TEMPLATES = {
 
 
 def get_api_key() -> Optional[str]:
-    """Get Grok API key from environment."""
-    return os.environ.get("GROK_API_KEY")
+    """Get Groq API key from environment."""
+    return os.environ.get("GROQ_API_KEY")
 
 
 def _build_prompt(context: Dict[str, Any], config: NudgeConfig) -> str:
-    """Build the prompt for Grok based on context."""
+    """Build the prompt for Groq based on context."""
     prompt_parts = []
     
     # Zone information
@@ -202,13 +202,13 @@ def _build_prompt(context: Dict[str, Any], config: NudgeConfig) -> str:
     return "\n".join(prompt_parts)
 
 
-async def _call_grok_api(
+async def _call_groq_api(
     prompt: str,
     api_key: str,
     timeout: float = 10.0
 ) -> Optional[str]:
     """
-    Call Grok API to generate nudge.
+    Call Groq API to generate nudge.
     
     Args:
         prompt: The prompt to send
@@ -224,7 +224,7 @@ async def _call_grok_api(
     }
     
     payload = {
-        "model": GROK_MODEL,
+        "model": GROQ_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
@@ -236,7 +236,7 @@ async def _call_grok_api(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                GROK_API_URL,
+                GROQ_API_URL,
                 headers=headers,
                 json=payload,
                 timeout=timeout,
@@ -316,16 +316,16 @@ async def generate_nudge(
         **context,
     }
     
-    # Try Grok API first
+    # Try Groq API first
     api_key = get_api_key()
     message = None
     generated_by = "fallback"
     
     if api_key:
         prompt = _build_prompt(full_context, config)
-        message = await _call_grok_api(prompt, api_key)
+        message = await _call_groq_api(prompt, api_key)
         if message:
-            generated_by = "grok"
+            generated_by = "groq"
     
     # Fallback to templates if API fails or no key
     if not message:
@@ -372,7 +372,7 @@ async def get_health_insight(
     history: Optional[List[float]] = None,
 ) -> Dict[str, Any]:
     """
-    Generate a detailed health insight using Grok.
+    Generate a detailed health insight using Groq.
     
     Args:
         zone_info: Current zone information
@@ -406,7 +406,7 @@ async def get_health_insight(
         else:
             context["trend"] = "stable"
     
-    # Try to get Grok insight
+    # Try to get Groq insight
     api_key = get_api_key()
     insight_text = None
     
@@ -423,7 +423,7 @@ Focus on:
 2. The most important area to improve
 3. One specific recommendation"""
         
-        insight_text = await _call_grok_api(prompt, api_key)
+        insight_text = await _call_groq_api(prompt, api_key)
     
     # Fallback insight
     if not insight_text:

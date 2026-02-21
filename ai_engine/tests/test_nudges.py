@@ -1,5 +1,5 @@
 """
-Tests for Grok-Powered Nudge System
+Tests for Groq-Powered Nudge System
 ===================================
 """
 
@@ -397,22 +397,22 @@ class TestGenerateNudgeWithMockedAPI:
         """Uses API when key is available."""
         mock_response = "🟢 Test API response message"
         
-        with patch.dict('os.environ', {'GROK_API_KEY': 'test-key'}), \
-             patch('ai_engine.nudges._call_grok_api', new_callable=AsyncMock) as mock_api:
+        with patch.dict('os.environ', {'GROQ_API_KEY': 'test-key'}), \
+             patch('ai_engine.nudges._call_groq_api', new_callable=AsyncMock) as mock_api:
             
             mock_api.return_value = mock_response
             
             zone_info = get_zone_info(85)
             nudge = await generate_nudge(zone_info)
             
-            assert nudge.generated_by == "grok"
+            assert nudge.generated_by == "groq"
             assert nudge.message == mock_response
     
     @pytest.mark.asyncio
     async def test_falls_back_on_api_failure(self):
         """Falls back to template when API fails."""
-        with patch.dict('os.environ', {'GROK_API_KEY': 'test-key'}), \
-             patch('ai_engine.nudges._call_grok_api', new_callable=AsyncMock) as mock_api:
+        with patch.dict('os.environ', {'GROQ_API_KEY': 'test-key'}), \
+             patch('ai_engine.nudges._call_groq_api', new_callable=AsyncMock) as mock_api:
             
             mock_api.return_value = None  # API failed
             
@@ -505,7 +505,7 @@ class TestAPIKeyHandling:
     
     def test_get_api_key_when_set(self):
         """Returns API key when set."""
-        with patch.dict('os.environ', {'GROK_API_KEY': 'test-key-123'}):
+        with patch.dict('os.environ', {'GROQ_API_KEY': 'test-key-123'}):
             assert get_api_key() == 'test-key-123'
     
     def test_get_api_key_when_not_set(self):
