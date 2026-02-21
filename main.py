@@ -3,7 +3,12 @@ from routers import sessionRouter, readingRouter
 from repository import database
 from fastapi.middleware.cors import CORSMiddleware
 
-database.Base.metadata.create_all(bind=database.engine)
+# Create tables (safe - database.py already handles connection failures)
+try:
+    database.Base.metadata.create_all(bind=database.engine)
+    print("Database tables created successfully")
+except Exception as e:
+    print(f"Warning: Could not create tables: {e}")
 
 app = FastAPI(title="CardioTwin API")
 
