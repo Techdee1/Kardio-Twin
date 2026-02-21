@@ -1,0 +1,35 @@
+name: cardiotwin
+region: nyc
+services:
+  - name: api
+    github:
+      repo: Techdee1/Kardio-Twin
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    environment_slug: python
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 8000
+    run_command: uvicorn main:app --host 0.0.0.0 --port 8000
+    envs:
+      - key: GROQ_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_ACCOUNT_SID
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_AUTH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_WHATSAPP_NUMBER
+        scope: RUN_TIME
+        value: "whatsapp:+14155238886"
+      - key: TWILIO_SMS_NUMBER
+        scope: RUN_TIME
+        type: SECRET
+    health_check:
+      http_path: /health
