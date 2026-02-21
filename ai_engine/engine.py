@@ -590,7 +590,7 @@ class CardioTwinEngine:
             remaining = session.calibration_readings_required - len(session.readings)
             message = f"Calibrating baseline: {remaining} more readings needed"
         elif alerts:
-            high_severity = [a for a in alerts if a.severity in [AlertSeverity.HIGH, AlertSeverity.CRITICAL]]
+            high_severity = [a for a in alerts if a.severity in [AlertSeverity.URGENT, AlertSeverity.CRITICAL]]
             if high_severity:
                 message = f"⚠️ Alert: {high_severity[0].message}"
             else:
