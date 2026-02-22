@@ -15,20 +15,20 @@ interface SimulatedReading {
     temperature: number;
 }
 
-// Simulates realistic biometric variations
-function generateReading(baseState: 'healthy' | 'stressed' | 'critical' = 'healthy'): SimulatedReading {
+// Simulates realistic biometric variations for demo
+function generateReading(baseState: 'healthy' | 'stressed' | 'recovery' = 'healthy'): SimulatedReading {
     const baseValues = {
         healthy: { bpm: 68, hrv: 55, spo2: 98, temp: 36.5 },
-        stressed: { bpm: 85, hrv: 35, spo2: 96, temp: 37.2 },
-        critical: { bpm: 110, hrv: 20, spo2: 92, temp: 38.5 },
+        stressed: { bpm: 95, hrv: 25, spo2: 94, temp: 37.4 }, // Breath hold stress
+        recovery: { bpm: 75, hrv: 45, spo2: 97, temp: 36.8 },
     };
 
     const base = baseValues[baseState];
     
-    // Add realistic noise
+    // Add realistic noise for actual readings
     return {
-        bpm: Math.round(base.bpm + (Math.random() - 0.5) * 8),
-        hrv: Math.round(base.hrv + (Math.random() - 0.5) * 10),
+        bpm: Math.round(base.bpm + (Math.random() - 0.5) * 6),
+        hrv: Math.round(base.hrv + (Math.random() - 0.5) * 8),
         spo2: Math.round(Math.min(100, base.spo2 + (Math.random() - 0.5) * 2)),
         temperature: parseFloat((base.temp + (Math.random() - 0.5) * 0.3).toFixed(1)),
     };
@@ -46,16 +46,34 @@ export function useSensorSimulator({
     const sendReading = useCallback(async () => {
         if (!sessionId) return;
 
-        // Simulate different health states for demo purposes
-        // First 20 readings: healthy calibration
-        // Then vary based on demo scenario
-        let state: 'healthy' | 'stressed' | 'critical' = 'healthy';
+        // Demo Timeline (2s interval):
+        // 0-14s: Wait (no readings sent - simulating no sensor contact)
+        // 15-24s (readings 0-4): NORMAL - hands placed on sensors
+        // 25-38s (readings 5-11): NORMAL - continue baseline  
+        // 40-48s (readings 12-16): STRESSED - breath hold simulation
+        // 50s+ (readings 17+): RECOVERY - returning to normal
+        
         const count = readingCountRef.current;
         
-        if (count > 25 && count < 35) {
-            state = 'stressed'; // Simulate some stress
-        } else if (count >= 35 && count < 40) {
-            state = 'healthy'; // Recovery
+        // Skip sending readings for first 15 seconds (first 7-8 intervals)
+        // This simulates waiting for user to place hands on sensors
+        if (count < 7) {
+            readingCountRef.current++;
+            console.log(`[Sensor] Waiting for sensor contact... (${count + 1}/7)`);
+            return;
+        }
+        
+        // Adjust count to start from 0 after waiting period
+        const adjustedCount = count - 7;
+        
+        let state: 'healthy' | 'stressed' | 'recovery' = 'healthy';
+        
+        if (adjustedCount < 12) {
+            state = 'healthy'; // Normal baseline (15-38s)
+        } else if (adjustedCount >= 12 && adjustedCount < 17) {
+            state = 'stressed'; // Breath hold stress (40-48s)
+        } else {
+            state = 'recovery'; // Recovery phase (50s+)
         }
 
         const reading = generateReading(state);
@@ -68,7 +86,13 @@ export function useSensorSimulator({
             
             readingCountRef.current++;
             
-            console.log(`[Sensor] Reading #${readingCountRef.current} sent:`, reading, response.status);
+            const stateLabels = {
+                healthy: '✅ NORMAL',
+                stressed: '⚠️ STRESSED',
+                recovery: '🔄 RECOVERY'
+            };
+            
+            console.log(`[Sensor] Reading #${adjustedCount + 1} [${stateLabels[state]}]:`, reading, response.status);
             console.log(`[Sensor] Full response:`, JSON.stringify(response));
             
             if (onReading) {
