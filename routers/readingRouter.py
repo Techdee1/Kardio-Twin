@@ -165,8 +165,13 @@ def predict_risk(
     
     PRD: POST /api/predict
     Projects future health trajectory based on current patterns.
+    Supports optional scenario param for lifestyle-based projections.
     """
-    result = ai.predict(request.session_id, request.days)
+    result = ai.predict(
+        request.session_id, 
+        request.days, 
+        scenario=request.scenario
+    )
     
     if result.get("status") == "error":
         raise HTTPException(

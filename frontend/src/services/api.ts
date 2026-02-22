@@ -46,6 +46,7 @@ export interface HistoryEntry {
 export interface PredictionRequest {
     session_id: string;
     days: number;
+    scenario?: string;
 }
 
 export interface PredictionResponse {
@@ -55,6 +56,7 @@ export interface PredictionResponse {
     current_risk_category: string;
     projected_risk_category: string;
     disclaimer: string;
+    scenario_note?: string;
 }
 
 export interface NudgeResponse {

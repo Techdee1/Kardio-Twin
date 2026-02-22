@@ -126,6 +126,10 @@ const ha: Record<string, string> = {
     'projection.scoreChange': 'Canjin maki',
     'projection.hrChange': 'Canjin bugun zuciya',
     'projection.riskChange': 'Matakin haɗari',
+    'projection.scenarioLabel': 'Yanayi (Zaɓi)',
+    'projection.scenarioPlaceholder': 'misali, "Mene zai faru idan na daina cin sukari"',
+    'projection.analyze': 'Bincika',
+    'projection.scenarioHint': 'AI zai yi nazarin wannan canjin salon rayuwa',
 
     // History chart
     'history.title': 'Tarihin Zaman',

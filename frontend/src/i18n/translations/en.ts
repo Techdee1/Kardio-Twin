@@ -126,6 +126,10 @@ const en: Record<string, string> = {
     'projection.scoreChange': 'Score change',
     'projection.hrChange': 'Resting HR change',
     'projection.riskChange': 'Risk category',
+    'projection.scenarioLabel': 'Scenario (Optional)',
+    'projection.scenarioPlaceholder': 'e.g., "What if I stop taking sugar"',
+    'projection.analyze': 'Analyze',
+    'projection.scenarioHint': 'AI will analyze this lifestyle change',
 
     // History chart
     'history.title': 'Session History',

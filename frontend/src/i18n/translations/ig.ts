@@ -126,6 +126,10 @@ const ig: Record<string, string> = {
     'projection.scoreChange': 'Mgbanwe akara',
     'projection.hrChange': 'Mgbanwe ịkụ obi',
     'projection.riskChange': 'Ọkwa ihe ize ndụ',
+    'projection.scenarioLabel': 'Ọnọdụ (Nhọrọ)',
+    'projection.scenarioPlaceholder': 'dịka, "Kedu ihe ga-eme ma m kwụsị iri shuga"',
+    'projection.analyze': 'Nyochaa',
+    'projection.scenarioHint': 'AI ga-enyocha mgbanwe ndụ a',
 
     // History chart
     'history.title': 'Akụkọ Oge',

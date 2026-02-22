@@ -348,7 +348,7 @@ class CardioTwinAPI:
         
         return history
     
-    def predict(self, session_id: str, days: int = 90) -> Dict[str, Any]:
+    def predict(self, session_id: str, days: int = 90, scenario: str = None) -> Dict[str, Any]:
         """
         What-if risk projection.
         
@@ -357,6 +357,7 @@ class CardioTwinAPI:
         Args:
             session_id: Session to project from
             days: Days to project ahead (default 90)
+            scenario: Optional lifestyle scenario (e.g., "stop taking sugar")
         
         Returns:
             Projection response per PRD format.
@@ -379,6 +380,49 @@ class CardioTwinAPI:
             # Use engine projection (average of projected scores)
             projected_score = sum(projection.projected_scores) / len(projection.projected_scores)
         
+        # Apply scenario-based adjustments if provided
+        scenario_impact = 0.0
+        scenario_note = ""
+        if scenario:
+            scenario_lower = scenario.lower()
+            
+            # Parse scenario and estimate impact on score
+            if any(word in scenario_lower for word in ['stop', 'quit', 'reduce', 'cut', 'avoid']):
+                if any(word in scenario_lower for word in ['sugar', 'sweet', 'carb', 'soda', 'candy']):
+                    scenario_impact = 8.5  # Positive impact from reducing sugar
+                    scenario_note = "Reducing sugar intake typically improves metabolic health"
+                elif any(word in scenario_lower for word in ['smoking', 'smoke', 'cigarette', 'tobacco']):
+                    scenario_impact = 15.0  # Major positive impact from quitting smoking
+                    scenario_note = "Quitting smoking has significant cardiovascular benefits"
+                elif any(word in scenario_lower for word in ['alcohol', 'drink', 'beer', 'wine']):
+                    scenario_impact = 6.0  # Positive impact from reducing alcohol
+                    scenario_note = "Reducing alcohol improves heart health"
+                elif any(word in scenario_lower for word in ['salt', 'sodium']):
+                    scenario_impact = 5.0  # Positive impact from reducing salt
+                    scenario_note = "Lower sodium intake reduces blood pressure"
+            
+            elif any(word in scenario_lower for word in ['start', 'begin', 'increase', 'add', 'more']):
+                if any(word in scenario_lower for word in ['exercise', 'workout', 'gym', 'run', 'walk', 'jog']):
+                    scenario_impact = 12.0  # Major positive impact from exercise
+                    scenario_note = "Regular exercise significantly improves cardiovascular health"
+                elif any(word in scenario_lower for word in ['sleep', 'rest']):
+                    scenario_impact = 7.0  # Positive impact from better sleep
+                    scenario_note = "Adequate sleep is crucial for heart health"
+                elif any(word in scenario_lower for word in ['water', 'hydrat']):
+                    scenario_impact = 4.0  # Moderate positive impact from hydration
+                    scenario_note = "Proper hydration supports cardiovascular function"
+                elif any(word in scenario_lower for word in ['vegetable', 'fruit', 'fiber']):
+                    scenario_impact = 6.5  # Positive impact from better diet
+                    scenario_note = "Plant-based foods reduce cardiovascular risk"
+                elif any(word in scenario_lower for word in ['meditat', 'yoga', 'mindful']):
+                    scenario_impact = 5.5  # Positive impact from stress reduction
+                    scenario_note = "Stress management practices benefit heart health"
+            
+            # Apply gradual impact based on time frame
+            time_factor = min(days / 90.0, 1.0)  # Full impact at 90 days
+            projected_score += (scenario_impact * time_factor)
+            projected_score = min(100, projected_score)  # Cap at 100
+        
         # Calculate projected HR increase (rough estimate)
         score_delta = current_score - projected_score
         hr_increase = score_delta * 0.15  # Approximate correlation
@@ -394,7 +438,7 @@ class CardioTwinAPI:
             else:
                 return "Critical Strain"
         
-        return {
+        response = {
             "current_score": round(current_score, 1),
             "projected_score": round(projected_score, 1),
             "projected_resting_hr_increase_bpm": round(hr_increase, 1),
@@ -402,6 +446,12 @@ class CardioTwinAPI:
             "projected_risk_category": get_category(projected_score),
             "disclaimer": "Statistical projection only. Not a medical diagnosis.",
         }
+        
+        # Add scenario note if applicable
+        if scenario_note:
+            response["scenario_note"] = scenario_note
+        
+        return response
     
     def get_nudge_message(self, session_id: str) -> Dict[str, Any]:
         """

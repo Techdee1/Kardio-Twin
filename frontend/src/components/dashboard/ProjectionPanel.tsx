@@ -37,13 +37,18 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [days, setDays] = useState(30);
+    const [scenario, setScenario] = useState('');
     const { t } = useLanguage();
 
     const fetchPrediction = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await api.getPrediction({ session_id: sessionId, days });
+            const data = await api.getPrediction({ 
+                session_id: sessionId, 
+                days,
+                scenario: scenario.trim() || undefined 
+            });
             setPrediction(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch prediction');
@@ -53,8 +58,9 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
     };
 
     useEffect(() => {
+        // Fetch initial prediction without scenario
         fetchPrediction();
-    }, [sessionId, days]);
+    }, [sessionId]);
 
     const currentZone = zoneFromScore(currentScore);
     const projectedZone = prediction ? zoneFromScore(prediction.projected_score) : 'GREEN';
@@ -99,6 +105,39 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                             {d} {t('projection.days')}
                         </button>
                     ))}
+                </div>
+
+                {/* Scenario input */}
+                <div className="mt-4 space-y-2">
+                    <label className="text-xs font-bold text-background-dark/70 uppercase tracking-wide">
+                        {t('projection.scenarioLabel')}
+                    </label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={scenario}
+                            onChange={(e) => setScenario(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    fetchPrediction();
+                                }
+                            }}
+                            placeholder={t('projection.scenarioPlaceholder')}
+                            className="flex-1 px-3 py-2 rounded-lg border border-background-dark/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        />
+                        <button
+                            onClick={fetchPrediction}
+                            disabled={isLoading}
+                            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {t('projection.analyze')}
+                        </button>
+                    </div>
+                    {scenario && (
+                        <p className="text-[10px] text-purple-600/70 italic">
+                            {t('projection.scenarioHint')}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -223,6 +262,15 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                                 </div>
                             </div>
                         </div>
+
+                        {/* Scenario Note */}
+                        {prediction.scenario_note && (
+                            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
+                                <p className="text-xs text-purple-700 font-medium">
+                                    💡 {prediction.scenario_note}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Disclaimer */}
                         <p className="text-[10px] text-background-dark/40 text-center italic">

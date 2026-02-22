@@ -126,6 +126,10 @@ const yo: Record<string, string> = {
     'projection.scoreChange': 'Ìyípadà ìkà',
     'projection.hrChange': 'Ìyípadà ìlù ọkàn',
     'projection.riskChange': 'Ìpele ewu',
+    'projection.scenarioLabel': 'Ipò (Àyàn)',
+    'projection.scenarioPlaceholder': 'àpẹẹrẹ, "Kí yóò ṣẹlẹ̀ tí mo bá dẹ́kun lílo ṣúgà"',
+    'projection.analyze': 'Ṣe Ìtúpalẹ̀',
+    'projection.scenarioHint': 'AI yóò ṣe àtúnṣe ìyípadà ìgbésí ayé yìí',
 
     // History chart
     'history.title': 'Ìtàn Àkókò',

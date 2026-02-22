@@ -43,6 +43,7 @@ class PredictRequest(BaseModel):
     """Request for risk prediction."""
     session_id: str
     days: int = 90
+    scenario: Optional[str] = None
 
 # Response DTOs
 class CalibratingReadingResponse(BaseModel):
