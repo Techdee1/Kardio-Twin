@@ -81,7 +81,7 @@ export default function DashboardPage() {
     useSensorSimulator({
         sessionId,
         enabled: activeView === 'overview' && !!sessionId,
-        intervalMs: 2000, // Send reading every 2 seconds
+        intervalMs: 1500, // Send reading every 1.5 seconds for faster calibration
         onReading: handleReadingResponse,
     });
 
@@ -275,8 +275,18 @@ export default function DashboardPage() {
                                         {/* 3D Body Render — shifts left when panel is open */}
                                         <div className={`relative h-full min-h-[700px] flex items-center justify-center z-10 transition-all duration-500 ease-in-out ${showNudge ? 'flex-[3]' : 'flex-1'}`}>
                                             <div className="absolute inset-0 translate-y-4 rounded-3xl overflow-hidden pointer-events-auto">
-                                                <Canvas shadows camera={{ position: [0, 1, 6], fov: 35 }}>
-                                                    <Suspense fallback={null}>
+                                                <Canvas 
+                                                    shadows 
+                                                    camera={{ position: [0, 1, 6], fov: 35 }}
+                                                    dpr={[1, 2]}
+                                                    performance={{ min: 0.5 }}
+                                                >
+                                                    <Suspense fallback={
+                                                        <mesh>
+                                                            <boxGeometry args={[1, 2, 0.5]} />
+                                                            <meshStandardMaterial color="#e5e7eb" wireframe />
+                                                        </mesh>
+                                                    }>
                                                         <ambientLight intensity={0.6} />
                                                         <spotLight position={[5, 5, 5]} intensity={1.5} angle={0.5} penumbra={1} castShadow />
                                                         <Environment preset="city" />

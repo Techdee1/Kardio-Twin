@@ -46,16 +46,15 @@ export function useSensorSimulator({
     const sendReading = useCallback(async () => {
         if (!sessionId) return;
 
-        // Demo Timeline (2s interval):
-        // 0-14s: Wait (no readings sent - simulating no sensor contact)
-        // 15-24s (readings 0-4): NORMAL - hands placed on sensors
-        // 25-38s (readings 5-11): NORMAL - continue baseline  
-        // 40-48s (readings 12-16): STRESSED - breath hold simulation
-        // 50s+ (readings 17+): RECOVERY - returning to normal
+        // Demo Timeline (1.5s interval):
+        // 0-10.5s: Wait (no readings sent - simulating no sensor contact, 7 intervals)
+        // 10.5-28.5s: NORMAL - hands placed on sensors (12 readings)
+        // 30-37.5s: STRESSED - breath hold simulation (5 readings)
+        // 39s+: RECOVERY - returning to normal
         
         const count = readingCountRef.current;
         
-        // Skip sending readings for first 15 seconds (first 7-8 intervals)
+        // Skip sending readings for first ~10 seconds (first 7 intervals @ 1.5s)
         // This simulates waiting for user to place hands on sensors
         if (count < 7) {
             readingCountRef.current++;
@@ -69,11 +68,11 @@ export function useSensorSimulator({
         let state: 'healthy' | 'stressed' | 'recovery' = 'healthy';
         
         if (adjustedCount < 12) {
-            state = 'healthy'; // Normal baseline (15-38s)
+            state = 'healthy'; // Normal baseline (10.5-28.5s)
         } else if (adjustedCount >= 12 && adjustedCount < 17) {
-            state = 'stressed'; // Breath hold stress (40-48s)
+            state = 'stressed'; // Breath hold stress (30-37.5s)
         } else {
-            state = 'recovery'; // Recovery phase (50s+)
+            state = 'recovery'; // Recovery phase (39s+)
         }
 
         const reading = generateReading(state);

@@ -111,3 +111,6 @@ export function HealthAvatar({ score, vitals }: { score: number, vitals: any }) 
     </group>
   );
 }
+
+// Preload the model for faster initial rendering
+useGLTF.preload('/models/avatar.glb', 'https://www.gstatic.com/draco/versioned/decoders/1.5.7/');

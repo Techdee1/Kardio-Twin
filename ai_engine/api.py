@@ -103,7 +103,7 @@ class CardioTwinAPI:
             config: Optional engine configuration. Defaults to PRD specs.
         """
         default_config = {
-            "calibration_readings": 15,  # PRD: first 15 readings for baseline
+            "calibration_readings": 5,  # Reduced for faster demo experience
             "enable_anomaly_detection": True,
         }
         if config:
