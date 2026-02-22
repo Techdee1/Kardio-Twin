@@ -98,6 +98,8 @@ const ha: Record<string, string> = {
 
     // Sidebar
     'sidebar.overview': 'Bayanai',
+    'sidebar.projection': 'Me-Idan',
+    'sidebar.history': 'Tarihi',
     'sidebar.settings': 'Saituna',
     'sidebar.exit': 'Fita Daga Dashboard',
 
@@ -110,6 +112,36 @@ const ha: Record<string, string> = {
     'nudge.mindfulBreak': 'Hutu Na Hankali',
     'nudge.gettingAdvice': 'Ana neman shawara...',
     'nudge.refreshAdvice': 'Sabunta Shawara',
+
+    // Projection panel
+    'projection.title': 'Hasashen Me-Idan',
+    'projection.subtitle': 'Duba hanyar lafiyarka ta gaba',
+    'projection.days': 'kwanaki',
+    'projection.today': 'Yau',
+    'projection.projected': 'Hasashe',
+    'projection.loading': 'Ana lissafin hasashe...',
+    'projection.retry': 'Sake Gwadawa',
+    'projection.improving': 'Yana Inganta',
+    'projection.declining': 'Yana Buƙatar Kulawa',
+    'projection.scoreChange': 'Canjin maki',
+    'projection.hrChange': 'Canjin bugun zuciya',
+    'projection.riskChange': 'Matakin haɗari',
+
+    // History chart
+    'history.title': 'Tarihin Zaman',
+    'history.subtitle': 'Sabuntawa kowane 10s',
+    'history.score': 'Maki',
+    'history.heartRate': 'Bugun Zuciya',
+    'history.hrv': 'HRV',
+    'history.spo2': 'SpO₂',
+    'history.loading': 'Ana ɗaukar tarihi...',
+    'history.retry': 'Sake Gwadawa',
+    'history.noData': 'Babu bayanan tarihi tukuna',
+    'history.noDataHint': 'Za a nuna bayanai yayin da ake tattara karatun',
+    'history.zoneGreen': 'Yana Bunƙasa',
+    'history.zoneYellow': 'Ɗan Matsi',
+    'history.zoneOrange': 'Mai Yawa',
+    'history.zoneRed': 'Mai Tsanani',
 
     // Demo page
     'demo.subtitle': 'Tsarin Gargaɗi Na Farko Na Zuciyarka',

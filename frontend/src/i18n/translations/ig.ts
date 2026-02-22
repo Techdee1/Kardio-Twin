@@ -98,6 +98,8 @@ const ig: Record<string, string> = {
 
     // Sidebar
     'sidebar.overview': 'Nchịkọta',
+    'sidebar.projection': 'Ma-Ọ-Bụrụ',
+    'sidebar.history': 'Akụkọ',
     'sidebar.settings': 'Ntọala',
     'sidebar.exit': 'Pụọ na Dashboard',
 
@@ -110,6 +112,36 @@ const ig: Record<string, string> = {
     'nudge.mindfulBreak': 'Ezumike Uche',
     'nudge.gettingAdvice': 'Na-enweta ndụmọdụ...',
     'nudge.refreshAdvice': 'Megharịa Ndụmọdụ',
+
+    // Projection panel
+    'projection.title': 'Amụma Ma-Ọ-Bụrụ',
+    'projection.subtitle': 'Lee ụzọ ahụ ike gị n\'ọdịnihu',
+    'projection.days': 'ụbọchị',
+    'projection.today': 'Taa',
+    'projection.projected': 'Amụma',
+    'projection.loading': 'Na-agbakọ amụma...',
+    'projection.retry': 'Nwaa Ọzọ',
+    'projection.improving': 'Na-adịkwu Mma',
+    'projection.declining': 'Chọrọ Nlekọta',
+    'projection.scoreChange': 'Mgbanwe akara',
+    'projection.hrChange': 'Mgbanwe ịkụ obi',
+    'projection.riskChange': 'Ọkwa ihe ize ndụ',
+
+    // History chart
+    'history.title': 'Akụkọ Oge',
+    'history.subtitle': 'Mmelite kwa 10s',
+    'history.score': 'Akara',
+    'history.heartRate': 'Ịkụ Obi',
+    'history.hrv': 'HRV',
+    'history.spo2': 'SpO₂',
+    'history.loading': 'Na-ebu akụkọ...',
+    'history.retry': 'Nwaa Ọzọ',
+    'history.noData': 'Ọ nwebeghị data akụkọ',
+    'history.noDataHint': 'Data ga-egosi ka a na-anakọta ihe agụrụ',
+    'history.zoneGreen': 'Na-eto Eto',
+    'history.zoneYellow': 'Ntaramahụhụ Nta',
+    'history.zoneOrange': 'Dị Elu',
+    'history.zoneRed': 'Dị Njọ',
 
     // Demo page
     'demo.subtitle': 'Usoro Ịdọ Aka Ná Ntị N\'Oge Maka Obi Gị',

@@ -98,6 +98,8 @@ const en: Record<string, string> = {
 
     // Sidebar
     'sidebar.overview': 'Overview',
+    'sidebar.projection': 'What-If',
+    'sidebar.history': 'History',
     'sidebar.settings': 'Settings',
     'sidebar.exit': 'Exit Dashboard',
 
@@ -110,6 +112,36 @@ const en: Record<string, string> = {
     'nudge.mindfulBreak': 'Mindful Break',
     'nudge.gettingAdvice': 'Getting Advice...',
     'nudge.refreshAdvice': 'Refresh Advice',
+
+    // Projection panel
+    'projection.title': 'What-If Projection',
+    'projection.subtitle': 'See your future health trajectory',
+    'projection.days': 'days',
+    'projection.today': 'Today',
+    'projection.projected': 'Projected',
+    'projection.loading': 'Calculating projection...',
+    'projection.retry': 'Try Again',
+    'projection.improving': 'Trending Positive',
+    'projection.declining': 'Needs Attention',
+    'projection.scoreChange': 'Score change',
+    'projection.hrChange': 'Resting HR change',
+    'projection.riskChange': 'Risk category',
+
+    // History chart
+    'history.title': 'Session History',
+    'history.subtitle': 'Live updates every 10s',
+    'history.score': 'Score',
+    'history.heartRate': 'Heart Rate',
+    'history.hrv': 'HRV',
+    'history.spo2': 'SpO₂',
+    'history.loading': 'Loading history...',
+    'history.retry': 'Try Again',
+    'history.noData': 'No history data yet',
+    'history.noDataHint': 'Data will appear as readings are collected',
+    'history.zoneGreen': 'Thriving',
+    'history.zoneYellow': 'Mild Strain',
+    'history.zoneOrange': 'Elevated',
+    'history.zoneRed': 'Critical',
 
     // Demo page
     'demo.subtitle': "Your Heart's Early Warning System",

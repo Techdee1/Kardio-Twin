@@ -3,6 +3,8 @@ import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check } from 'lucide-rea
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import NudgePanel from '../components/dashboard/NudgePanel';
+import ProjectionPanel from '../components/dashboard/ProjectionPanel';
+import HistoryChart from '../components/dashboard/HistoryChart';
 import { api } from '../services/api';
 import type { NudgeResponse } from '../services/api';
 import { Canvas } from '@react-three/fiber';
@@ -26,7 +28,7 @@ export default function DashboardPage() {
     const sessionId = searchParams.get('session_id');
     const { lang, setLang, t } = useLanguage();
 
-    const [activeView, setActiveView] = useState<'overview' | 'settings'>('overview');
+    const [activeView, setActiveView] = useState<'overview' | 'projection' | 'history' | 'settings'>('overview');
 
     const defaultVitals: Vitals = {
         heartRate: 0,
@@ -53,7 +55,7 @@ export default function DashboardPage() {
     const [calibration, setCalibration] = useState<{ active: boolean, progress: number }>({ active: true, progress: 0 });
 
     // Handle reading response from sensor simulator
-    const handleReadingResponse = useCallback((reading: any, response: any) => {
+    const handleReadingResponse = useCallback((_reading: any, response: any) => {
         console.log('[Dashboard] handleReadingResponse called:', response);
         if (response.status === 'calibrating') {
             setCalibration({
@@ -334,6 +336,27 @@ export default function DashboardPage() {
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    )}
+
+                    {activeView === 'projection' && sessionId && (
+                        <div className="max-w-4xl mx-auto py-8">
+                            <ProjectionPanel 
+                                sessionId={sessionId} 
+                                currentScore={liveVitals.score}
+                                currentVitals={{
+                                    heartRate: liveVitals.heartRate,
+                                    hrv: liveVitals.hrv,
+                                    spO2: liveVitals.spO2,
+                                    skinTemp: liveVitals.skinTemp,
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {activeView === 'history' && sessionId && (
+                        <div className="max-w-4xl mx-auto py-8 h-[calc(100vh-12rem)]">
+                            <HistoryChart sessionId={sessionId} />
                         </div>
                     )}
 

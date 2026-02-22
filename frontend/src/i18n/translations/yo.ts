@@ -98,6 +98,8 @@ const yo: Record<string, string> = {
 
     // Sidebar
     'sidebar.overview': 'Àkópọ̀',
+    'sidebar.projection': 'Bí-Ó-Ṣe-Rí',
+    'sidebar.history': 'Ìtàn',
     'sidebar.settings': 'Àwọn Ètò',
     'sidebar.exit': 'Jade Ní Dashboard',
 
@@ -110,6 +112,36 @@ const yo: Record<string, string> = {
     'nudge.mindfulBreak': 'Ìsinmi Ọkàn',
     'nudge.gettingAdvice': 'Ó ń gba Ìmọ̀ràn...',
     'nudge.refreshAdvice': 'Tún Ìmọ̀ràn Ṣe',
+
+    // Projection panel
+    'projection.title': 'Àsọtẹ́lẹ̀ Bí-Ó-Ṣe-Rí',
+    'projection.subtitle': 'Wo ọjọ́ iwájú ìlera rẹ',
+    'projection.days': 'ọjọ́',
+    'projection.today': 'Lónìí',
+    'projection.projected': 'Àsọtẹ́lẹ̀',
+    'projection.loading': 'Ń ṣe ìròyìn...',
+    'projection.retry': 'Gbìyànjú Lẹ́ẹ̀kan Sí',
+    'projection.improving': 'Ó Ń Dára Sí',
+    'projection.declining': 'Nílò Ìfarabalẹ̀',
+    'projection.scoreChange': 'Ìyípadà ìkà',
+    'projection.hrChange': 'Ìyípadà ìlù ọkàn',
+    'projection.riskChange': 'Ìpele ewu',
+
+    // History chart
+    'history.title': 'Ìtàn Àkókò',
+    'history.subtitle': 'Ìmúdójúìwọ̀n gbogbo 10s',
+    'history.score': 'Ìkà',
+    'history.heartRate': 'Ìlù Ọkàn',
+    'history.hrv': 'HRV',
+    'history.spo2': 'SpO₂',
+    'history.loading': 'Ń gba ìtàn...',
+    'history.retry': 'Gbìyànjú Lẹ́ẹ̀kan Sí',
+    'history.noData': 'Kò sí dátà ìtàn sí bẹ́yìí',
+    'history.noDataHint': 'Dátà yóò hàn bí a ṣe ń kó àwọn kíkà jọ',
+    'history.zoneGreen': 'Ó Ń Gbádùn',
+    'history.zoneYellow': 'Ìfúnpá Kékeré',
+    'history.zoneOrange': 'Tó Ga',
+    'history.zoneRed': 'Ṣíṣe',
 
     // Demo page
     'demo.subtitle': 'Ètò Ìkìlọ̀ Ní Kùtùkùtù Fún Ọkàn Rẹ',
