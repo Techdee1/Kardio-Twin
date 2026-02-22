@@ -31,7 +31,7 @@ export function HealthAvatar({ score, vitals }: { score: number, vitals: any }) 
   });
 
   return (
-    <group position={[0, -1.8, 0]}>
+    <group position={[0, -2.3, 0]}>
       <primitive object={scene} scale={2.5} />
       <pointLight
         ref={lightRef}
