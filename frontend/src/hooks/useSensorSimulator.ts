@@ -47,32 +47,32 @@ export function useSensorSimulator({
         if (!sessionId) return;
 
         // Demo Timeline (1.5s interval):
-        // 0-10.5s: Wait (no readings sent - simulating no sensor contact, 7 intervals)
-        // 10.5-28.5s: NORMAL - hands placed on sensors (12 readings)
-        // 30-37.5s: STRESSED - breath hold simulation (5 readings)
-        // 39s+: RECOVERY - returning to normal
+        // 0-4.5s: Wait (no readings sent - simulating sensor placement, 3 intervals)
+        // 4.5-22.5s: NORMAL - hands on sensors, calibration completes after 5 readings (12 total)
+        // 24-31.5s: STRESSED - breath hold simulation (5 readings)
+        // 33s+: RECOVERY - returning to normal
         
         const count = readingCountRef.current;
         
-        // Skip sending readings for first ~10 seconds (first 7 intervals @ 1.5s)
+        // Skip sending readings for first ~4.5 seconds (first 3 intervals @ 1.5s)
         // This simulates waiting for user to place hands on sensors
-        if (count < 7) {
+        if (count < 3) {
             readingCountRef.current++;
-            console.log(`[Sensor] Waiting for sensor contact... (${count + 1}/7)`);
+            console.log(`[Sensor] Waiting for sensor contact... (${count + 1}/3)`);
             return;
         }
         
         // Adjust count to start from 0 after waiting period
-        const adjustedCount = count - 7;
+        const adjustedCount = count - 3;
         
         let state: 'healthy' | 'stressed' | 'recovery' = 'healthy';
         
         if (adjustedCount < 12) {
-            state = 'healthy'; // Normal baseline (10.5-28.5s)
+            state = 'healthy'; // Normal baseline (4.5-22.5s), calibration done after 5 readings
         } else if (adjustedCount >= 12 && adjustedCount < 17) {
-            state = 'stressed'; // Breath hold stress (30-37.5s)
+            state = 'stressed'; // Breath hold stress (24-31.5s)
         } else {
-            state = 'recovery'; // Recovery phase (39s+)
+            state = 'recovery'; // Recovery phase (33s+)
         }
 
         const reading = generateReading(state);

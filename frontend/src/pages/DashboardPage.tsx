@@ -81,7 +81,7 @@ export default function DashboardPage() {
     useSensorSimulator({
         sessionId,
         enabled: activeView === 'overview' && !!sessionId,
-        intervalMs: 1500, // Send reading every 1.5 seconds for faster calibration
+        intervalMs: 1000, // Send reading every 1 second for even faster calibration
         onReading: handleReadingResponse,
     });
 
@@ -262,12 +262,12 @@ export default function DashboardPage() {
                                         <div className="w-full h-3 bg-background-light rounded-full overflow-hidden border border-background-dark/10">
                                             <div
                                                 className="h-full bg-primary transition-all duration-500 rounded-full bg-[length:2rem_2rem] bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] animate-[progress-stripes_1s_linear_infinite]"
-                                                style={{ width: `${Math.max(5, calibration.progress * 100)}%` }}
+                                                style={{ width: `${Math.min(100, Math.max(5, calibration.progress * 100))}%` }}
                                             ></div>
                                         </div>
                                         <div className="flex justify-between w-full mt-3 text-xs font-bold text-background-dark/50 uppercase tracking-widest">
                                             <span>{t('dash.initializing')}</span>
-                                            <span>{Math.round(calibration.progress * 100)}%</span>
+                                            <span>{Math.min(100, Math.round(calibration.progress * 100))}%</span>
                                         </div>
                                     </div>
                                 ) : (
