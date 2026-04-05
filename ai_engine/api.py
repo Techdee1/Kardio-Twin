@@ -26,6 +26,14 @@ from dataclasses import dataclass, asdict
 from ai_engine.engine import CardioTwinEngine, SessionStatus
 from ai_engine.zones import Zone
 from ai_engine.nudges import Language
+from ai_engine.safety import (
+    should_alert_caregiver,
+    get_caregiver_message,
+    EscalationLevel,
+    DISCLAIMERS,
+    validate_llm_output,
+    add_safety_wrapper,
+)
 
 
 # Response models matching PRD API contract
@@ -114,25 +122,32 @@ class CardioTwinAPI:
         self._nudge_sent: Dict[str, bool] = {}  # Track nudge status per session
     
     def start_session(
-        self, 
-        session_id: str, 
+        self,
+        session_id: str,
         user_phone: Optional[str] = None,
-        language: str = "en"
+        language: str = "en",
+        caregiver_phone: Optional[str] = None,
+        caregiver_name: Optional[str] = None,
+        medical_professional_phone: Optional[str] = None,
+        medical_professional_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Start a new measurement session.
-        
+
         PRD Endpoint: POST /api/session/start
-        
+
         Args:
             session_id: Unique session identifier (e.g., "demo")
             user_phone: User's phone number for WhatsApp alerts
             language: Language code (en, pcm, yo, ig, ha)
-        
+            caregiver_phone: Emergency contact phone
+            caregiver_name: Emergency contact name
+            medical_professional_phone: Doctor phone
+            medical_professional_name: Doctor name
+
         Returns:
             {"status": "session_started", "session_id": "demo"}
         """
-        # Map language code to Language enum
         lang_map = {
             "en": Language.ENGLISH,
             "pcm": Language.PIDGIN,
@@ -141,20 +156,22 @@ class CardioTwinAPI:
             "ha": Language.HAUSA,
         }
         lang = lang_map.get(language, Language.ENGLISH)
-        
-        # Create session in engine (use session_id as both user_id and session_id)
+
         self.engine.create_session(
-            user_id=session_id, 
+            user_id=session_id,
             language=lang,
-            session_id=session_id,  # Use the same ID for simplicity
+            session_id=session_id,
+            caregiver_phone=caregiver_phone,
+            caregiver_name=caregiver_name,
+            medical_professional_phone=medical_professional_phone,
+            medical_professional_name=medical_professional_name,
         )
-        
-        # Store phone number for alerts
+
         if user_phone:
             self._phone_numbers[session_id] = user_phone
-        
+
         self._nudge_sent[session_id] = False
-        
+
         return {
             "status": "session_started",
             "session_id": session_id,
@@ -162,63 +179,62 @@ class CardioTwinAPI:
     
     def process_reading(self, reading: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Process a biometric reading from ESP32.
-        
+        Process a biometric reading from ESP32 or manual entry.
+
         PRD Endpoint: POST /api/reading
-        Called every 2 seconds by hardware.
-        
+        Called every 2 seconds by hardware, or on-demand for manual entry.
+
         Args:
             reading: {
-                "bpm": 72,
-                "hrv": 42.3,
-                "spo2": 98.1,
-                "temperature": 36.4,
-                "timestamp": 45000,
-                "session_id": "demo"
+                "bpm": 72, "hrv": 42.3, "spo2": 98.1, "temperature": 36.4,
+                "timestamp": 45000, "session_id": "demo",
+                "source": "kardiotwin_hw" | "manual"  (optional)
             }
-        
+
         Returns:
-            Calibrating response or scored response per PRD format.
+            Calibrating, retake-requested, or scored response.
         """
         session_id = reading.get("session_id", "demo")
-        
-        # Map PRD field names to engine field names
+        source = reading.get("source", "kardiotwin_hw")
+
         engine_reading = {
             "heart_rate": reading.get("bpm", reading.get("heart_rate", 0)),
             "hrv": reading.get("hrv", 0),
             "spo2": reading.get("spo2", 0),
             "temperature": reading.get("temperature", 0),
         }
-        
-        # Process through engine
+
         result = self.engine.process_reading(session_id, engine_reading)
-        
+
         if not result.success:
             return {"status": "error", "message": result.message}
-        
-        # Get session to check status
+
+        # Signal quality: request retake
+        if result.retake_requested:
+            return {
+                "status": "retake_requested",
+                "message": result.retake_message,
+                "signal_quality": result.signal_quality,
+                "signal_confidence": result.signal_confidence,
+            }
+
         session = self.engine.get_session(session_id)
-        
+
         # If still calibrating
         if session.status == SessionStatus.CALIBRATING:
-            readings_collected = len(session.readings)
-            readings_needed = session.calibration_readings_required
-            
             return {
                 "status": "calibrating",
-                "readings_collected": readings_collected,
-                "readings_needed": readings_needed,
+                "readings_collected": len(session.readings),
+                "readings_needed": session.calibration_readings_required,
                 "alert": False,
             }
-        
-        # Session is active - return full scored response
+
+        # Session is active — build scored response
         zone = result.zone
-        zone_info = self.ZONE_INFO.get(zone, {"label": "Unknown", "emoji": "⚪"})
-        
-        # Determine if alert should trigger (Orange or Red zone)
+        zone_display = self.ZONE_INFO.get(zone, {"label": "Unknown", "emoji": "⚪"})
+
         should_alert = zone in [Zone.ORANGE, Zone.RED]
-        
-        # Build component scores
+
         components = {
             "heart_rate": {
                 "value": engine_reading["heart_rate"],
@@ -237,8 +253,7 @@ class CardioTwinAPI:
                 "score": result.scores.temperature if result.scores else 0,
             },
         }
-        
-        # Get baseline data (baseline is a dict)
+
         baseline = session.baseline or {}
         baseline_data = {
             "resting_bpm": baseline.get("resting_bpm", 70),
@@ -246,27 +261,45 @@ class CardioTwinAPI:
             "normal_spo2": baseline.get("normal_spo2", 98),
             "normal_temp": baseline.get("normal_temp", 36.5),
         }
-        
-        # Track if nudge was sent this reading (for backend to trigger Twilio)
+
+        # Nudge tracking
         nudge_sent = False
         if should_alert and not self._nudge_sent.get(session_id, False):
             nudge_sent = True
             self._nudge_sent[session_id] = True
         elif not should_alert:
-            # Reset nudge flag when back to safe zone
             self._nudge_sent[session_id] = False
-        
-        return {
+
+        # Build safety info for response
+        safety_info = None
+        alert_caregiver = False
+        if result.safety:
+            safety_info = result.safety.to_dict()
+            alert_caregiver = should_alert_caregiver(
+                result.safety.escalation,
+                zone.value.upper() if zone else "GREEN",
+                session.consecutive_zone_count if zone in (Zone.ORANGE, Zone.RED) else 0,
+            )
+
+        response = {
             "status": "scored",
             "score": round(result.scores.cardiotwin_score, 1) if result.scores else 0,
             "zone": zone.value.upper(),
-            "zone_label": zone_info["label"],
-            "zone_emoji": zone_info["emoji"],
+            "zone_label": zone_display["label"],
+            "zone_emoji": zone_display["emoji"],
             "alert": should_alert,
             "nudge_sent": nudge_sent,
             "components": components,
             "baseline": baseline_data,
+            "source": source,
+            "signal_quality": result.signal_quality,
+            "signal_confidence": result.signal_confidence,
+            "safety": safety_info,
+            "alert_caregiver": alert_caregiver,
+            "disclaimer": DISCLAIMERS["not_diagnostic"],
         }
+
+        return response
     
     def get_score(self, session_id: str) -> Dict[str, Any]:
         """
