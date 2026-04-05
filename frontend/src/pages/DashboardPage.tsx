@@ -13,7 +13,12 @@ import { OrbitControls, Environment } from '@react-three/drei';
 import { HealthAvatar } from '../components/HealthAvatar';
 import { useLanguage, LANGUAGE_OPTIONS } from '../i18n/LanguageContext';
 import { useSensorSimulator } from '../hooks/useSensorSimulator';
-import { ENABLE_SCORE_POLLING, ENABLE_SIMULATOR } from '../config/dataSource';
+import {
+    DATA_SOURCE_MODE,
+    ENABLE_MANUAL_ENTRY,
+    ENABLE_SCORE_POLLING,
+    ENABLE_SIMULATOR,
+} from '../config/dataSource';
 
 export interface Vitals {
     heartRate: number;
@@ -30,7 +35,10 @@ export default function DashboardPage() {
     const sessionId = searchParams.get('session_id');
     const { lang, setLang, t } = useLanguage();
 
-    const [activeView, setActiveView] = useState<'overview' | 'projection' | 'history' | 'manual' | 'settings'>('overview');
+    const defaultView: 'overview' | 'projection' | 'history' | 'manual' | 'settings' =
+        DATA_SOURCE_MODE === 'manual' ? 'manual' : 'overview';
+
+    const [activeView, setActiveView] = useState<'overview' | 'projection' | 'history' | 'manual' | 'settings'>(defaultView);
 
     const defaultVitals: Vitals = {
         heartRate: 0,
@@ -52,6 +60,17 @@ export default function DashboardPage() {
             navigate('/');
         }
     }, [sessionId, navigate]);
+
+    useEffect(() => {
+        if (!ENABLE_MANUAL_ENTRY && activeView === 'manual') {
+            setActiveView('overview');
+            return;
+        }
+
+        if (DATA_SOURCE_MODE === 'manual' && activeView !== 'manual') {
+            setActiveView('manual');
+        }
+    }, [activeView]);
 
 
     const [calibration, setCalibration] = useState<{ active: boolean, progress: number }>({ active: true, progress: 0 });
