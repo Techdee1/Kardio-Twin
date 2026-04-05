@@ -32,7 +32,7 @@ export default function DemoPage() {
         const initSession = async () => {
             const newSessionId = `demo-${Date.now()}`;
             try {
-                await api.startSession({ session_id: newSessionId, user_id: 'demo-user' });
+                await api.startSession({ session_id: newSessionId });
                 setSessionId(newSessionId);
                 console.log('[Demo] Session started:', newSessionId);
             } catch (err) {
