@@ -116,13 +116,13 @@ export default function DemoPage() {
 
     return (
         <div
-            className="min-h-screen flex flex-col items-center justify-center"
+            className="min-h-screen flex flex-col items-center justify-center px-4"
             style={{ backgroundColor: "#0F172A" }}
         >
             {/* Alert Banner */}
             {alert && (
                 <div
-                    className="w-full text-center py-4 text-white text-2xl font-bold animate-pulse"
+                    className="w-full text-center py-3 sm:py-4 text-white text-lg sm:text-2xl font-bold animate-pulse"
                     style={{ backgroundColor: "#EF4444" }}
                 >
                     {t('demo.alert')}
@@ -130,10 +130,10 @@ export default function DemoPage() {
             )}
 
             {/* Logo */}
-            <h1 className="text-white text-3xl font-bold mb-2 tracking-widest uppercase">
+            <h1 className="text-white text-2xl sm:text-3xl font-bold mb-2 tracking-widest uppercase">
                 CardioTwin AI
             </h1>
-            <p className="text-slate-400 text-lg mb-12">
+            <p className="text-slate-400 text-base sm:text-lg mb-8 sm:mb-12 text-center">
                 {t('demo.subtitle')}
             </p>
 
@@ -141,20 +141,18 @@ export default function DemoPage() {
                 /* Calibration View */
                 <div className="flex flex-col items-center">
                     <div
-                        className="rounded-full flex flex-col items-center justify-center animate-pulse"
+                        className="rounded-full flex flex-col items-center justify-center animate-pulse w-[220px] h-[220px] sm:w-[320px] sm:h-[320px]"
                         style={{
-                            width: 320,
-                            height: 320,
-                            border: `12px solid #60a5fa`,
+                            border: `10px solid #60a5fa`,
                             boxShadow: `0 0 60px #60a5fa, 0 0 120px #60a5fa40`,
                         }}
                     >
-                        <span className="text-4xl text-blue-400 font-bold mb-2">
+                        <span className="text-3xl sm:text-4xl text-blue-400 font-bold mb-2">
                             {Math.round(progress * 100)}%
                         </span>
-                        <span className="text-slate-400 text-lg">Calibrating...</span>
+                        <span className="text-slate-400 text-base sm:text-lg">Calibrating...</span>
                     </div>
-                    <p className="text-slate-500 text-sm mt-8 max-w-xs text-center">
+                    <p className="text-slate-500 text-sm mt-6 sm:mt-8 max-w-xs text-center">
                         Establishing your personal baseline. Please remain still.
                     </p>
                 </div>
@@ -163,27 +161,25 @@ export default function DemoPage() {
                 <>
                     {/* Score Circle */}
                     <div
-                        className="rounded-full flex flex-col items-center justify-center"
+                        className="rounded-full flex flex-col items-center justify-center w-[220px] h-[220px] sm:w-[320px] sm:h-[320px]"
                         style={{
-                            width: 320,
-                            height: 320,
-                            border: `12px solid ${color}`,
+                            border: `10px solid ${color}`,
                             boxShadow: `0 0 60px ${color}, 0 0 120px ${color}40`,
                             transition: "all 0.3s ease-in-out",
                         }}
                     >
                         <span
-                            className="font-bold"
-                            style={{ fontSize: 96, color: color, lineHeight: 1 }}
+                            className="font-bold text-[64px] sm:text-[96px]"
+                            style={{ color: color, lineHeight: 1 }}
                         >
                             {displayScore}
                         </span>
-                        <span className="text-slate-400 text-xl mt-2">{t('demo.scoreLabel')}</span>
+                        <span className="text-slate-400 text-lg sm:text-xl mt-2">{t('demo.scoreLabel')}</span>
                     </div>
 
                     {/* Zone Label */}
                     <div
-                        className="mt-8 px-8 py-3 rounded-full text-2xl font-bold"
+                        className="mt-6 sm:mt-8 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-lg sm:text-2xl font-bold"
                         style={{
                             backgroundColor: `${color}20`,
                             color: color,
@@ -200,7 +196,7 @@ export default function DemoPage() {
             )}
 
             {/* Footer */}
-            <p className="text-slate-600 text-sm mt-16">
+            <p className="text-slate-600 text-xs sm:text-sm mt-10 sm:mt-16 text-center">
                 {t('demo.disclaimer')}
             </p>
         </div>
