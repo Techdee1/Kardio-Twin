@@ -20,9 +20,9 @@ COMPONENT_WEIGHTS = {'heart_rate': 0.25, 'hrv': 0.40, 'spo2': 0.20, 'temperature
 def store_reading(data: readingsDto.BiometricReadingRequest, ai_result: Dict[str, Any], db):
     """
     Store biometric reading with AI Engine results in database.
-    
+
     Args:
-        data: Raw biometric data from ESP32
+        data: Raw biometric data from ESP32 or manual entry
         ai_result: Processed result from CardioTwinAPI
         db: Database session
     """
@@ -32,11 +32,16 @@ def store_reading(data: readingsDto.BiometricReadingRequest, ai_result: Dict[str
             hrv=data.hrv,
             spo2=data.spo2,
             temperature=data.temperature,
+            systolic_bp=getattr(data, "systolic_bp", None),
+            diastolic_bp=getattr(data, "diastolic_bp", None),
             timestamp=data.timestamp,
             session_id=data.session_id,
+            source=getattr(data, "source", "hardware"),
             score=ai_result.get("score"),
             zone=ai_result.get("zone"),
             alert=ai_result.get("alert", False),
+            signal_quality=ai_result.get("signal_quality"),
+            signal_confidence=ai_result.get("signal_confidence"),
         )
         db.add(biometric_reading)
         db.commit()
@@ -45,6 +50,26 @@ def store_reading(data: readingsDto.BiometricReadingRequest, ai_result: Dict[str
     except Exception as e:
         db.rollback()
         print(f"Error storing reading: {e}")
+        return None
+
+
+def store_alert_feedback(data: readingsDto.AlertFeedbackRequest, db):
+    """Store user feedback on an alert."""
+    try:
+        feedback = dataModel.AlertFeedback(
+            session_id=data.session_id,
+            reading_id=data.reading_id,
+            alert_type=data.alert_type,
+            feedback=data.feedback,
+            comment=data.comment,
+        )
+        db.add(feedback)
+        db.commit()
+        db.refresh(feedback)
+        return feedback
+    except Exception as e:
+        db.rollback()
+        print(f"Error storing feedback: {e}")
         return None
 
 
