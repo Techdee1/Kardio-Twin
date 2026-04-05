@@ -547,7 +547,15 @@ class CardioTwinEngine:
                     for r in session.readings
                 ]
 
-                baseline_result = calibrate_baseline(calibration_readings)
+                baseline_result = calibrate_baseline(
+                    calibration_readings,
+                    min_readings=session.calibration_readings_required,
+                    target_readings=session.calibration_readings_required,
+                    extended_readings=max(
+                        session.calibration_readings_required,
+                        session.calibration_readings_required + 5,
+                    ),
+                )
 
                 if baseline_result.get("calibration_complete", False):
                     session.baseline = baseline_result

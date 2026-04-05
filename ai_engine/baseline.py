@@ -167,13 +167,18 @@ def is_post_exercise(readings: List[Dict]) -> bool:
     return bool(avg_bpm > 100 or avg_hrv < 25)
 
 
-def calibrate_baseline(readings: List[Dict]) -> Dict:
+def calibrate_baseline(
+    readings: List[Dict],
+    min_readings: int = MIN_CALIBRATION_READINGS,
+    target_readings: int = TARGET_CALIBRATION_READINGS,
+    extended_readings: int = EXTENDED_CALIBRATION_READINGS,
+) -> Dict:
     """
     Calculate baseline from initial calibration readings.
     
     Process:
     1. Remove statistical outliers (IQR method)
-    2. Check for sufficient valid readings (min 12)
+    2. Check for sufficient valid readings
     3. Detect motion artifacts or post-exercise state
     4. Calculate mean values for each parameter
     5. Return baseline or calibration status
@@ -206,11 +211,15 @@ def calibrate_baseline(readings: List[Dict]) -> Dict:
         >>> baseline["resting_bpm"]
         71.5
     """
+    min_readings = max(1, int(min_readings))
+    target_readings = max(min_readings, int(target_readings))
+    extended_readings = max(target_readings, int(extended_readings))
+
     if not readings:
         return {
             "calibration_complete": False,
             "readings_collected": 0,
-            "readings_required": TARGET_CALIBRATION_READINGS,
+            "readings_required": target_readings,
             "message": "No readings collected yet"
         }
     
@@ -224,21 +233,21 @@ def calibrate_baseline(readings: List[Dict]) -> Dict:
     warnings = []
     
     # Insufficient readings
-    if num_clean < MIN_CALIBRATION_READINGS:
+    if num_clean < min_readings:
         # Check if we should extend calibration window
-        if num_total >= TARGET_CALIBRATION_READINGS:
+        if num_total >= target_readings:
             return {
                 "calibration_complete": False,
                 "readings_collected": num_total,
-                "readings_required": EXTENDED_CALIBRATION_READINGS,
-                "message": f"Too many outliers detected. Need {EXTENDED_CALIBRATION_READINGS - num_total} more readings."
+                "readings_required": extended_readings,
+                "message": f"Too many outliers detected. Need {max(0, extended_readings - num_total)} more readings."
             }
         else:
             return {
                 "calibration_complete": False,
                 "readings_collected": num_total,
-                "readings_required": TARGET_CALIBRATION_READINGS,
-                "message": f"Collecting baseline... {TARGET_CALIBRATION_READINGS - num_total} readings remaining."
+                "readings_required": target_readings,
+                "message": f"Collecting baseline... {max(0, target_readings - num_total)} readings remaining."
             }
     
     # Check for motion during calibration

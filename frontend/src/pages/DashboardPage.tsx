@@ -79,13 +79,8 @@ export default function DashboardPage() {
     useEffect(() => {
         if (!modeFlags.enableManualEntry && activeView === 'manual') {
             setActiveView('overview');
-            return;
         }
-
-        if (selectedMode === 'manual' && activeView !== 'manual') {
-            setActiveView('manual');
-        }
-    }, [activeView, modeFlags.enableManualEntry, selectedMode]);
+    }, [activeView, modeFlags.enableManualEntry]);
 
     const requestSourceSwitch = useCallback((nextSource?: string) => {
         const normalizedSource = formatSourceLabel(nextSource);
@@ -338,9 +333,11 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="flex-1 relative bg-white rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden flex items-center justify-center min-h-[350px] sm:min-h-[450px] md:min-h-[600px] w-full mt-2 sm:mt-4">
-                                {/* Background glow */}
-                                <div className="absolute inset-0 bg-primary/5 opacity-40 pointer-events-none"></div>
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-primary/10 blur-[120px] rounded-full"></div>
+                                {/* Clinical background */}
+                                <div className="absolute inset-0 bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_48%,#f9fcff_100%)] pointer-events-none"></div>
+                                <div className="absolute inset-0 opacity-40 pointer-events-none bg-[linear-gradient(to_right,rgba(56,189,248,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,189,248,0.12)_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+                                <div className="absolute -top-16 -left-16 w-[260px] sm:w-[360px] h-[260px] sm:h-[360px] bg-cyan-200/35 blur-[90px] rounded-full pointer-events-none"></div>
+                                <div className="absolute -bottom-20 -right-10 w-[260px] sm:w-[340px] h-[260px] sm:h-[340px] bg-emerald-200/25 blur-[95px] rounded-full pointer-events-none"></div>
 
                                 {calibration.active ? (
                                     <div className="relative z-10 flex flex-col items-center max-w-md w-full p-5 sm:p-8 mx-3 text-center bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-primary/20 shadow-xl">
@@ -363,10 +360,10 @@ export default function DashboardPage() {
                                     <div className="flex flex-col md:flex-row gap-4 w-full h-full min-h-[350px] sm:min-h-[450px] md:min-h-[600px]">
                                         {/* 3D Body Render — shifts left when panel is open */}
                                         <div className={`relative h-full min-h-[350px] sm:min-h-[450px] md:min-h-[700px] flex items-center justify-center z-10 transition-all duration-500 ease-in-out ${showNudge ? 'md:flex-[3]' : 'flex-1'}`}>
-                                            <div className="absolute inset-0 rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-auto">
+                                            <div className="absolute inset-x-0 top-0 bottom-[92px] sm:bottom-[124px] rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-auto">
                                                 <Canvas
                                                     shadows
-                                                    camera={{ position: [0, 1.55, 7.4], fov: 38 }}
+                                                    camera={{ position: [0, 1.45, 7.6], fov: 37 }}
                                                     dpr={[1, 2]}
                                                     performance={{ min: 0.5 }}
                                                 >
@@ -385,11 +382,11 @@ export default function DashboardPage() {
                                                         <OrbitControls
                                                             enablePan={false}
                                                             makeDefault
-                                                            target={[0, 1.45, 0]}
+                                                            target={[0, 1.25, 0]}
                                                             minPolarAngle={Math.PI / 6}
                                                             maxPolarAngle={Math.PI / 1.5}
-                                                            minDistance={5.8}
-                                                            maxDistance={10.5}
+                                                            minDistance={5.9}
+                                                            maxDistance={10}
                                                             zoomSpeed={1.5}
                                                         />
                                                     </Suspense>
@@ -478,6 +475,15 @@ export default function DashboardPage() {
                         <div className="max-w-lg mx-auto py-4 sm:py-8">
                             <ManualInputPanel sessionId={sessionId} onReadingSubmitted={(result) => {
                                 requestSourceSwitch(result?.source || 'manual');
+
+                                if (result.status === 'calibrating') {
+                                    setCalibration({
+                                        active: true,
+                                        progress: (result.readings_collected || 0) / (result.readings_needed || 5)
+                                    });
+                                    return;
+                                }
+
                                 if (result.status === 'scored' && result.components) {
                                     setCalibration({ active: false, progress: 1 });
                                     setLiveVitals({
@@ -488,6 +494,7 @@ export default function DashboardPage() {
                                         score: Math.round(result.score),
                                         trend: result.zone_label || 'Optimal',
                                     });
+                                    setActiveView('overview');
                                 }
                             }} />
                         </div>

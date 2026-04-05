@@ -47,7 +47,7 @@ class SessionStartResponse:
 class CalibratingResponse:
     status: str = "calibrating"
     readings_collected: int = 0
-    readings_needed: int = 15
+    readings_needed: int = 5
     alert: bool = False
 
 
