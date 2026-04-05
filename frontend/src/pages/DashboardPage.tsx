@@ -5,6 +5,7 @@ import Sidebar from '../components/dashboard/Sidebar';
 import NudgePanel from '../components/dashboard/NudgePanel';
 import ProjectionPanel from '../components/dashboard/ProjectionPanel';
 import HistoryChart from '../components/dashboard/HistoryChart';
+import ManualInputPanel from '../components/dashboard/ManualInputPanel';
 import { api } from '../services/api';
 import type { NudgeResponse } from '../services/api';
 import { Canvas } from '@react-three/fiber';
@@ -28,7 +29,7 @@ export default function DashboardPage() {
     const sessionId = searchParams.get('session_id');
     const { lang, setLang, t } = useLanguage();
 
-    const [activeView, setActiveView] = useState<'overview' | 'projection' | 'history' | 'settings'>('overview');
+    const [activeView, setActiveView] = useState<'overview' | 'projection' | 'history' | 'manual' | 'settings'>('overview');
 
     const defaultVitals: Vitals = {
         heartRate: 0,
@@ -382,6 +383,24 @@ export default function DashboardPage() {
                     {activeView === 'history' && sessionId && (
                         <div className="max-w-4xl mx-auto py-4 sm:py-8 h-[calc(100vh-10rem)] md:h-[calc(100vh-12rem)]">
                             <HistoryChart sessionId={sessionId} />
+                        </div>
+                    )}
+
+                    {activeView === 'manual' && sessionId && (
+                        <div className="max-w-lg mx-auto py-4 sm:py-8">
+                            <ManualInputPanel sessionId={sessionId} onReadingSubmitted={(result) => {
+                                if (result.status === 'scored' && result.components) {
+                                    setCalibration({ active: false, progress: 1 });
+                                    setLiveVitals({
+                                        heartRate: Math.round(result.components.heart_rate.value),
+                                        hrv: Math.round(result.components.hrv.value),
+                                        spO2: Math.round(result.components.spo2.value),
+                                        skinTemp: result.components.temperature.value,
+                                        score: Math.round(result.score),
+                                        trend: result.zone_label || 'Optimal',
+                                    });
+                                }
+                            }} />
                         </div>
                     )}
 
