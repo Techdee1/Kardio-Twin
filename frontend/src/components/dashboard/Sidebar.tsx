@@ -1,10 +1,10 @@
-import { Settings, LayoutDashboard, LogOut, Calendar, BarChart3 } from 'lucide-react';
+import { Settings, LayoutDashboard, LogOut, Calendar, BarChart3, ClipboardPen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface SidebarProps {
-    activeView: 'overview' | 'projection' | 'history' | 'settings';
-    setActiveView: (view: 'overview' | 'projection' | 'history' | 'settings') => void;
+    activeView: 'overview' | 'projection' | 'history' | 'manual' | 'settings';
+    setActiveView: (view: 'overview' | 'projection' | 'history' | 'manual' | 'settings') => void;
 }
 
 export default function Sidebar({ activeView, setActiveView }: SidebarProps) {
@@ -14,6 +14,7 @@ export default function Sidebar({ activeView, setActiveView }: SidebarProps) {
         { id: 'overview', label: t('sidebar.overview'), icon: LayoutDashboard },
         { id: 'projection', label: t('sidebar.projection'), icon: Calendar },
         { id: 'history', label: t('sidebar.history'), icon: BarChart3 },
+        { id: 'manual', label: t('sidebar.manual'), icon: ClipboardPen },
         { id: 'settings', label: t('sidebar.settings'), icon: Settings },
     ] as const;
 
