@@ -363,10 +363,10 @@ export default function DashboardPage() {
                                     <div className="flex flex-col md:flex-row gap-4 w-full h-full min-h-[350px] sm:min-h-[450px] md:min-h-[600px]">
                                         {/* 3D Body Render — shifts left when panel is open */}
                                         <div className={`relative h-full min-h-[350px] sm:min-h-[450px] md:min-h-[700px] flex items-center justify-center z-10 transition-all duration-500 ease-in-out ${showNudge ? 'md:flex-[3]' : 'flex-1'}`}>
-                                            <div className="absolute inset-0 translate-y-4 rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-auto">
+                                            <div className="absolute inset-0 rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-auto">
                                                 <Canvas
                                                     shadows
-                                                    camera={{ position: [0, 1, 6], fov: 35 }}
+                                                    camera={{ position: [0, 1.55, 7.4], fov: 38 }}
                                                     dpr={[1, 2]}
                                                     performance={{ min: 0.5 }}
                                                 >
@@ -385,10 +385,11 @@ export default function DashboardPage() {
                                                         <OrbitControls
                                                             enablePan={false}
                                                             makeDefault
+                                                            target={[0, 1.45, 0]}
                                                             minPolarAngle={Math.PI / 6}
                                                             maxPolarAngle={Math.PI / 1.5}
-                                                            minDistance={1.5}
-                                                            maxDistance={15}
+                                                            minDistance={5.8}
+                                                            maxDistance={10.5}
                                                             zoomSpeed={1.5}
                                                         />
                                                     </Suspense>

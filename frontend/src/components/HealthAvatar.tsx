@@ -12,6 +12,8 @@ export function HealthAvatar({ score, vitals }: { score: number, vitals: any }) 
   );
 
   const lightRef = useRef<THREE.PointLight>(null);
+  const avatarRootRef = useRef<THREE.Group>(null);
+  const baseY = -1.6;
 
   const zoneColor = useMemo(() => {
     if (score >= 80) return '#22c55e';
@@ -23,6 +25,11 @@ export function HealthAvatar({ score, vitals }: { score: number, vitals: any }) 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
+    if (avatarRootRef.current) {
+      avatarRootRef.current.rotation.y += 0.0018;
+      avatarRootRef.current.position.y = baseY + Math.sin(t * 0.55) * 0.03;
+    }
+
     if (lightRef.current) {
       const bpmSync = ((vitals?.heartRate || 60) / 60) * Math.PI * 2;
       const intensity = 2 + Math.sin(t * bpmSync) * 1.5;
@@ -31,8 +38,8 @@ export function HealthAvatar({ score, vitals }: { score: number, vitals: any }) 
   });
 
   return (
-    <group position={[0, -2.3, 0]}>
-      <primitive object={scene} scale={2.5} />
+    <group ref={avatarRootRef} position={[0, baseY, 0]} scale={0.88}>
+      <primitive object={scene} scale={2.35} />
       <pointLight
         ref={lightRef}
         position={[-0.2, 3.2, 0.2]}
