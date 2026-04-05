@@ -48,6 +48,16 @@ from .projection import (
     RiskProjection,
     WhatIfScenario,
 )
+from .safety import (
+    check_red_flags,
+    SafetyCheck,
+    EscalationLevel,
+    AlertThrottle,
+    assess_signal_quality,
+    should_request_retake,
+    calculate_baseline_confidence,
+    adjust_alert_severity_for_confidence,
+)
 
 
 class SessionStatus(Enum):
@@ -107,26 +117,38 @@ class SessionData:
     status: SessionStatus = SessionStatus.CALIBRATING
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    
+
     # Readings history
     readings: List[Reading] = field(default_factory=list)
-    
+
     # Computed baseline
     baseline: Optional[Dict[str, Any]] = None
-    
+    baseline_confidence: str = "low"
+    baseline_confidence_score: float = 0.0
+
     # Current state
     current_scores: ComponentScores = field(default_factory=ComponentScores)
     current_zone: Zone = Zone.GREEN
     previous_zone: Optional[Zone] = None
-    
+
+    # Safety
+    current_safety: Optional[SafetyCheck] = None
+    consecutive_zone_count: int = 0  # consecutive readings in current zone
+
     # History tracking
     zone_history: List[Dict[str, Any]] = field(default_factory=list)
     score_history: List[Dict[str, Any]] = field(default_factory=list)
-    
+
     # Alerts
     active_alerts: List[Alert] = field(default_factory=list)
     alert_history: List[Alert] = field(default_factory=list)
-    
+
+    # Caregiver contacts
+    caregiver_phone: Optional[str] = None
+    caregiver_name: Optional[str] = None
+    medical_professional_phone: Optional[str] = None
+    medical_professional_name: Optional[str] = None
+
     # Configuration
     language: Language = Language.ENGLISH
     calibration_readings_required: int = 5
@@ -154,26 +176,35 @@ class ProcessingResult:
     success: bool
     session_id: str
     timestamp: datetime
-    
+
     # Validation
     reading_valid: bool = True
     validation_errors: List[str] = field(default_factory=list)
     sensor_errors: List[str] = field(default_factory=list)
-    
+
+    # Signal quality
+    signal_quality: str = "good"          # good / ok / poor
+    signal_confidence: float = 1.0
+    retake_requested: bool = False
+    retake_message: str = ""
+
     # Scores
     scores: Optional[ComponentScores] = None
-    
+
     # Zone
     zone: Optional[Zone] = None
     zone_changed: bool = False
     zone_info: Optional[ZoneInfo] = None
-    
+
     # Alerts
     new_alerts: List[Alert] = field(default_factory=list)
-    
+
+    # Safety
+    safety: Optional[SafetyCheck] = None
+
     # Trend
     trend: Optional[TrendAnalysis] = None
-    
+
     # Message
     message: str = ""
     
@@ -186,6 +217,10 @@ class ProcessingResult:
             "reading_valid": self.reading_valid,
             "validation_errors": self.validation_errors,
             "sensor_errors": self.sensor_errors,
+            "signal_quality": self.signal_quality,
+            "signal_confidence": self.signal_confidence,
+            "retake_requested": self.retake_requested,
+            "retake_message": self.retake_message,
             "scores": self.scores.to_dict() if self.scores else None,
             "zone": self.zone.value if self.zone else None,
             "zone_changed": self.zone_changed,
@@ -203,6 +238,7 @@ class ProcessingResult:
                 }
                 for a in self.new_alerts
             ],
+            "safety": self.safety.to_dict() if self.safety else None,
             "trend": {
                 "direction": self.trend.direction.value,
                 "confidence": self.trend.confidence,
@@ -251,13 +287,16 @@ class CardioTwinEngine:
         """
         self.config = config or {}
         self.sessions: Dict[str, SessionData] = {}
-        
+
         # Default configuration
         self.calibration_readings = self.config.get("calibration_readings", 5)
         self.default_language = Language(
             self.config.get("default_language", "english")
         )
         self.max_readings_history = self.config.get("max_readings_history", 1000)
+
+        # Safety: alert throttle (shared across sessions)
+        self.alert_throttle = AlertThrottle()
     
     def _normalize_reading_data(
         self,
@@ -305,27 +344,39 @@ class CardioTwinEngine:
         user_id: str,
         language: Optional[Language] = None,
         session_id: Optional[str] = None,
+        caregiver_phone: Optional[str] = None,
+        caregiver_name: Optional[str] = None,
+        medical_professional_phone: Optional[str] = None,
+        medical_professional_name: Optional[str] = None,
     ) -> str:
         """
         Create a new user session.
-        
+
         Args:
             user_id: Unique user identifier
             language: Preferred language for nudges
             session_id: Optional custom session ID
-            
+            caregiver_phone: Emergency contact phone number
+            caregiver_name: Emergency contact name
+            medical_professional_phone: Doctor/nurse phone
+            medical_professional_name: Doctor/nurse name
+
         Returns:
             Session ID string
         """
         sid = session_id or str(uuid.uuid4())
-        
+
         self.sessions[sid] = SessionData(
             session_id=sid,
             user_id=user_id,
             language=language or self.default_language,
             calibration_readings_required=self.calibration_readings,
+            caregiver_phone=caregiver_phone,
+            caregiver_name=caregiver_name,
+            medical_professional_phone=medical_professional_phone,
+            medical_professional_name=medical_professional_name,
         )
-        
+
         return sid
     
     def get_session(self, session_id: str) -> Optional[SessionData]:
@@ -438,11 +489,32 @@ class CardioTwinEngine:
         
         # Step 2: Sanitize values
         sanitized = sanitize_reading(normalized_data)
-        
+
         # Step 3: Check for sensor errors
         has_sensor_error, sensor_error_type = detect_sensor_error(sanitized)
         sensor_errors = [sensor_error_type] if has_sensor_error and sensor_error_type else []
-        
+
+        # Step 3b: Signal quality gating
+        sig_quality, sig_confidence, sig_issues = assess_signal_quality(
+            sanitized["bpm"], sanitized["hrv"], sanitized["spo2"], sanitized["temperature"],
+        )
+        retake_needed, retake_msg = should_request_retake(sig_quality, sig_confidence)
+
+        if retake_needed:
+            # Still store the reading but flag it
+            return ProcessingResult(
+                success=True,
+                session_id=session_id,
+                timestamp=now,
+                reading_valid=True,
+                signal_quality=sig_quality,
+                signal_confidence=sig_confidence,
+                retake_requested=True,
+                retake_message=retake_msg,
+                sensor_errors=sensor_errors,
+                message=retake_msg,
+            )
+
         # Create reading object (sanitized uses 'bpm', we use 'heart_rate')
         reading = Reading(
             timestamp=now,
@@ -452,20 +524,19 @@ class CardioTwinEngine:
             temperature=sanitized["temperature"],
             raw_data=reading_data,
         )
-        
+
         # Add to history
         session.readings.append(reading)
-        
+
         # Trim history if needed
         if len(session.readings) > self.max_readings_history:
             session.readings = session.readings[-self.max_readings_history:]
-        
+
         session.updated_at = now
-        
+
         # Step 4: Update baseline if calibrating
         if session.status == SessionStatus.CALIBRATING:
             if len(session.readings) >= session.calibration_readings_required:
-                # Calibrate baseline - convert readings to expected format
                 calibration_readings = [
                     {
                         "bpm": r.heart_rate,
@@ -475,33 +546,40 @@ class CardioTwinEngine:
                     }
                     for r in session.readings
                 ]
-                
+
                 baseline_result = calibrate_baseline(calibration_readings)
-                
-                # Check if calibration completed successfully
+
                 if baseline_result.get("calibration_complete", False):
                     session.baseline = baseline_result
                     session.status = SessionStatus.ACTIVE
-        
+
+                    # Calculate baseline confidence
+                    bl_conf, bl_score = calculate_baseline_confidence(
+                        baseline_result.get("readings_collected", 0),
+                        baseline_result.get("calibration_quality", "fair"),
+                        baseline_result.get("variance"),
+                    )
+                    session.baseline_confidence = bl_conf
+                    session.baseline_confidence_score = bl_score
+
         # Use baseline or defaults for scoring
         baseline = session.baseline
-        
-        # Default baseline values if not yet calibrated
+
         baseline_hr = baseline.get("resting_bpm", 70.0) if baseline else 70.0
         baseline_hrv = baseline.get("resting_hrv", 50.0) if baseline else 50.0
         baseline_spo2 = baseline.get("normal_spo2", 98.0) if baseline else 98.0
         baseline_temp = baseline.get("normal_temp", 36.6) if baseline else 36.6
-        
-        # Step 5: Calculate component scores (functions return Tuple[score, description])
+
+        # Step 5: Calculate component scores
         hr_score, _ = score_heart_rate(reading.heart_rate, baseline_hr)
         hrv_score, _ = score_hrv(reading.hrv, baseline_hrv)
         spo2_score, _ = score_spo2(reading.spo2, baseline_spo2)
         temp_score, _ = score_temperature(reading.temperature, baseline_temp)
-        
+
         cardiotwin_score = calculate_cardiotwin_score(
             hr_score, hrv_score, spo2_score, temp_score
         )
-        
+
         scores = ComponentScores(
             heart_rate=hr_score,
             hrv=hrv_score,
@@ -509,19 +587,19 @@ class CardioTwinEngine:
             temperature=temp_score,
             cardiotwin_score=cardiotwin_score,
         )
-        
+
         session.current_scores = scores
         session.score_history.append({
             "timestamp": now.isoformat(),
             "scores": scores.to_dict(),
         })
-        
+
         # Step 6: Classify zone
         previous_zone = session.current_zone
         zone = classify_zone(cardiotwin_score)
         zone_info = get_zone_info(cardiotwin_score)
         zone_changed = zone != previous_zone
-        
+
         session.previous_zone = previous_zone
         session.current_zone = zone
         session.zone_history.append({
@@ -529,17 +607,31 @@ class CardioTwinEngine:
             "zone": zone.value,
             "score": cardiotwin_score,
         })
-        
-        # Step 7: Detect anomalies
-        # Build current reading dict for anomaly detection
+
+        # Track consecutive zone count (for caregiver alert logic)
+        if zone_changed:
+            session.consecutive_zone_count = 1
+        else:
+            session.consecutive_zone_count += 1
+
+        # Step 7: Red-flag safety check (absolute thresholds, independent of baseline)
+        safety_check = check_red_flags(
+            heart_rate=reading.heart_rate,
+            hrv=reading.hrv,
+            spo2=reading.spo2,
+            temperature=reading.temperature,
+            sustained_readings=session.consecutive_zone_count if zone in (Zone.ORANGE, Zone.RED) else 1,
+        )
+        session.current_safety = safety_check
+
+        # Step 8: Detect anomalies
         current_reading_dict = {
             "hr": reading.heart_rate,
             "hrv": reading.hrv,
             "spo2": reading.spo2,
             "temp": reading.temperature,
         }
-        
-        # Build baseline dict for anomaly detection
+
         baseline_dict = None
         if session.baseline:
             baseline_dict = {
@@ -548,12 +640,11 @@ class CardioTwinEngine:
                 "spo2": session.baseline.get("normal_spo2", 98.0),
                 "temp": session.baseline.get("normal_temp", 36.6),
             }
-        
-        # Get previous score for anomaly detection
+
         previous_score = None
         if len(session.score_history) > 0:
             previous_score = session.score_history[-1]["scores"]["cardiotwin_score"]
-        
+
         anomaly_result = detect_anomalies(
             current_score=cardiotwin_score,
             previous_score=previous_score,
@@ -569,14 +660,30 @@ class CardioTwinEngine:
                 "temperature": temp_score,
             },
         )
-        
-        alerts = anomaly_result.alerts
-        
+
+        # Step 8b: Throttle alerts + adjust severity for baseline confidence
+        alerts = []
+        for alert in anomaly_result.alerts:
+            # Adjust severity based on baseline confidence
+            adjusted_severity_str = adjust_alert_severity_for_confidence(
+                alert.severity.value,
+                session.baseline_confidence,
+            )
+            # Convert back to enum
+            adjusted_severity = AlertSeverity(adjusted_severity_str)
+
+            # Throttle: skip if same alert was sent recently (except critical)
+            if self.alert_throttle.should_send(
+                session_id, alert.alert_type.value, adjusted_severity.value,
+            ):
+                alert.severity = adjusted_severity
+                alerts.append(alert)
+
         if alerts:
             session.active_alerts = alerts
             session.alert_history.extend(alerts)
-        
-        # Step 8: Calculate trend
+
+        # Step 9: Calculate trend
         trend = None
         if len(session.score_history) >= 3:
             recent_scores = [
@@ -584,33 +691,38 @@ class CardioTwinEngine:
                 for h in session.score_history[-10:]
             ]
             trend = calculate_trend(recent_scores)
-        
-        # Build result message
+
+        # Build result message (safety takes priority)
         if session.status == SessionStatus.CALIBRATING:
             remaining = session.calibration_readings_required - len(session.readings)
             message = f"Calibrating baseline: {remaining} more readings needed"
+        elif safety_check.red_flags:
+            message = safety_check.safe_next_step
         elif alerts:
             high_severity = [a for a in alerts if a.severity in [AlertSeverity.URGENT, AlertSeverity.CRITICAL]]
             if high_severity:
-                message = f"⚠️ Alert: {high_severity[0].message}"
+                message = f"Alert: {high_severity[0].message}"
             else:
                 message = f"Notice: {alerts[0].message}"
         elif zone_changed:
             message = f"Zone changed: {previous_zone.value} → {zone.value}"
         else:
             message = f"Zone: {zone.value} | Score: {cardiotwin_score:.1f}"
-        
+
         return ProcessingResult(
             success=True,
             session_id=session_id,
             timestamp=now,
             reading_valid=True,
+            signal_quality=sig_quality,
+            signal_confidence=sig_confidence,
             sensor_errors=sensor_errors,
             scores=scores,
             zone=zone,
             zone_changed=zone_changed,
             zone_info=zone_info,
             new_alerts=alerts,
+            safety=safety_check,
             trend=trend,
             message=message,
         )
