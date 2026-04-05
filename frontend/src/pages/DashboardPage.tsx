@@ -29,6 +29,11 @@ export interface Vitals {
     trend: string;
 }
 
+function formatSourceLabel(source?: string): string {
+    if (!source) return 'UNKNOWN';
+    return source.replace(/_/g, ' ').trim().toUpperCase();
+}
+
 export default function DashboardPage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -53,6 +58,7 @@ export default function DashboardPage() {
     const [nudge, setNudge] = useState<NudgeResponse | null>(null);
     const [showNudge, setShowNudge] = useState(false);
     const [isLoadingNudge, setIsLoadingNudge] = useState(false);
+    const [activeSource, setActiveSource] = useState<string>(formatSourceLabel(DATA_SOURCE_MODE));
 
     // Initial load check
     useEffect(() => {
@@ -78,6 +84,8 @@ export default function DashboardPage() {
     // Handle reading response from sensor simulator
     const handleReadingResponse = useCallback((_reading: any, response: any) => {
         console.log('[Dashboard] handleReadingResponse called:', response);
+        setActiveSource(formatSourceLabel(response?.source || 'simulator'));
+
         if (response.status === 'calibrating') {
             setCalibration({
                 active: true,
@@ -124,11 +132,13 @@ export default function DashboardPage() {
                 const data: any = await api.getScore(sessionId);
 
                 if (data.status === 'calibrating') {
+                    setActiveSource(formatSourceLabel(data.source || 'hardware'));
                     setCalibration({
                         active: true,
                         progress: (data.readings_collected || 0) / (data.readings_needed || 15)
                     });
                 } else if (data.status === 'scored') {
+                    setActiveSource(formatSourceLabel(data.source || 'hardware'));
                     setCalibration({ active: false, progress: 1 });
                     setLiveVitals(prev => ({
                         ...prev,
@@ -207,6 +217,10 @@ export default function DashboardPage() {
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                             </span>
                             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-primary">{t('dash.liveStatus')}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-slate-200 shadow-sm">
+                            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600">Source</span>
+                            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-800">{activeSource}</span>
                         </div>
                         <div className="hidden sm:block h-8 w-[1px] bg-background-dark/10"></div>
                         <div className="flex items-center gap-2 sm:gap-3">
@@ -411,6 +425,7 @@ export default function DashboardPage() {
                     {activeView === 'manual' && sessionId && (
                         <div className="max-w-lg mx-auto py-4 sm:py-8">
                             <ManualInputPanel sessionId={sessionId} onReadingSubmitted={(result) => {
+                                setActiveSource(formatSourceLabel(result?.source || 'manual'));
                                 if (result.status === 'scored' && result.components) {
                                     setCalibration({ active: false, progress: 1 });
                                     setLiveVitals({
