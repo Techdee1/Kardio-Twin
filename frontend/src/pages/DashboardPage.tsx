@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
@@ -14,10 +14,12 @@ import { HealthAvatar } from '../components/HealthAvatar';
 import { useLanguage, LANGUAGE_OPTIONS } from '../i18n/LanguageContext';
 import { useSensorSimulator } from '../hooks/useSensorSimulator';
 import {
+    DATA_SOURCE_MODE_OPTIONS,
     DATA_SOURCE_MODE,
-    ENABLE_MANUAL_ENTRY,
-    ENABLE_SCORE_POLLING,
-    ENABLE_SIMULATOR,
+    type DataSourceMode,
+    getModeDefaults,
+    getStoredDataSourceMode,
+    setStoredDataSourceMode,
 } from '../config/dataSource';
 
 export interface Vitals {
@@ -42,8 +44,12 @@ export default function DashboardPage() {
     const sessionId = searchParams.get('session_id');
     const { lang, setLang, t } = useLanguage();
 
+    const initialMode = getStoredDataSourceMode() ?? DATA_SOURCE_MODE;
+    const [selectedMode, setSelectedMode] = useState<DataSourceMode>(initialMode);
+    const modeFlags = useMemo(() => getModeDefaults(selectedMode), [selectedMode]);
+
     const defaultView: 'overview' | 'projection' | 'history' | 'manual' | 'settings' =
-        DATA_SOURCE_MODE === 'manual' ? 'manual' : 'overview';
+        initialMode === 'manual' ? 'manual' : 'overview';
 
     const [activeView, setActiveView] = useState<'overview' | 'projection' | 'history' | 'manual' | 'settings'>(defaultView);
 
@@ -60,7 +66,7 @@ export default function DashboardPage() {
     const [nudge, setNudge] = useState<NudgeResponse | null>(null);
     const [showNudge, setShowNudge] = useState(false);
     const [isLoadingNudge, setIsLoadingNudge] = useState(false);
-    const [activeSource, setActiveSource] = useState<string>(formatSourceLabel(DATA_SOURCE_MODE));
+    const [activeSource, setActiveSource] = useState<string>(formatSourceLabel(initialMode));
     const sourceDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Initial load check
@@ -71,15 +77,15 @@ export default function DashboardPage() {
     }, [sessionId, navigate]);
 
     useEffect(() => {
-        if (!ENABLE_MANUAL_ENTRY && activeView === 'manual') {
+        if (!modeFlags.enableManualEntry && activeView === 'manual') {
             setActiveView('overview');
             return;
         }
 
-        if (DATA_SOURCE_MODE === 'manual' && activeView !== 'manual') {
+        if (selectedMode === 'manual' && activeView !== 'manual') {
             setActiveView('manual');
         }
-    }, [activeView]);
+    }, [activeView, modeFlags.enableManualEntry, selectedMode]);
 
     const requestSourceSwitch = useCallback((nextSource?: string) => {
         const normalizedSource = formatSourceLabel(nextSource);
@@ -96,6 +102,16 @@ export default function DashboardPage() {
             sourceDebounceTimerRef.current = null;
         }, SOURCE_SWITCH_DEBOUNCE_MS);
     }, [activeSource]);
+
+    const toggleMode = useCallback(() => {
+        const currentIndex = DATA_SOURCE_MODE_OPTIONS.indexOf(selectedMode);
+        const nextIndex = (currentIndex + 1) % DATA_SOURCE_MODE_OPTIONS.length;
+        const nextMode = DATA_SOURCE_MODE_OPTIONS[nextIndex];
+
+        setSelectedMode(nextMode);
+        setStoredDataSourceMode(nextMode);
+        requestSourceSwitch(nextMode);
+    }, [requestSourceSwitch, selectedMode]);
 
     useEffect(() => {
         return () => {
@@ -134,7 +150,7 @@ export default function DashboardPage() {
 
     // Sensor simulator - sends mock biometric data to backend
     // This simulates what the hardware would do in production
-    const simulatorEnabled = ENABLE_SIMULATOR && activeView === 'overview' && !!sessionId;
+    const simulatorEnabled = modeFlags.enableSimulator && activeView === 'overview' && !!sessionId;
 
     useSensorSimulator({
         sessionId,
@@ -146,7 +162,7 @@ export default function DashboardPage() {
     // Fallback: Poll Score API only if sensor simulator isn't providing data
     // This is mainly for when connecting to real hardware that doesn't use the simulator
     useEffect(() => {
-        const shouldPollScore = ENABLE_SCORE_POLLING
+        const shouldPollScore = modeFlags.enableScorePolling
             && activeView === 'overview'
             && !!sessionId
             && !simulatorEnabled;
@@ -196,7 +212,7 @@ export default function DashboardPage() {
         const interval = setInterval(pollScore, 2000);
         pollScore(); // Initial fetch
         return () => clearInterval(interval);
-    }, [activeView, requestSourceSwitch, sessionId, simulatorEnabled]);
+    }, [activeView, modeFlags.enableScorePolling, requestSourceSwitch, sessionId, simulatorEnabled]);
 
     // On-demand nudge fetch
     const fetchNudge = useCallback(async () => {
@@ -249,6 +265,14 @@ export default function DashboardPage() {
                             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600">Source</span>
                             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-800">{activeSource}</span>
                         </div>
+                        <button
+                            onClick={toggleMode}
+                            className="flex items-center gap-1.5 sm:gap-2 bg-indigo-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-indigo-200 shadow-sm hover:bg-indigo-200 transition-colors"
+                            title="Toggle mode"
+                        >
+                            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-600">Mode</span>
+                            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-800">{selectedMode}</span>
+                        </button>
                         <div className="hidden sm:block h-8 w-[1px] bg-background-dark/10"></div>
                         <div className="flex items-center gap-2 sm:gap-3">
                             <button
