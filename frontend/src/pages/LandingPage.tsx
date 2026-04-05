@@ -8,6 +8,11 @@ export default function LandingPage() {
     const navigate = useNavigate();
     const [phone, setPhone] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showContacts, setShowContacts] = useState(false);
+    const [caregiverName, setCaregiverName] = useState('');
+    const [caregiverPhone, setCaregiverPhone] = useState('');
+    const [medName, setMedName] = useState('');
+    const [medPhone, setMedPhone] = useState('');
     const { t } = useLanguage();
 
     const handleStart = async () => {
@@ -18,13 +23,19 @@ export default function LandingPage() {
         setIsLoading(true);
         try {
             const sessionId = `session-${Date.now()}`;
-            const userId = `+234${phone.trim()}`;
-            await api.startSession({ session_id: sessionId, user_id: userId });
-            console.log(`[CardioTwin] ✅ Session created successfully! Session ID: ${sessionId}, User: ${userId}`);
+            const userPhone = `+234${phone.trim()}`;
+            await api.startSession({
+                session_id: sessionId,
+                user_phone: userPhone,
+                caregiver_phone: caregiverPhone ? `+234${caregiverPhone.trim()}` : undefined,
+                caregiver_name: caregiverName || undefined,
+                medical_professional_phone: medPhone ? `+234${medPhone.trim()}` : undefined,
+                medical_professional_name: medName || undefined,
+            });
             navigate(`/dashboard?session_id=${sessionId}`);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            console.error(`[CardioTwin] ❌ Session creation failed: ${message}. Falling back to demo session.`);
+            console.error(`[CardioTwin] Session creation failed: ${message}. Falling back to demo session.`);
             navigate(`/dashboard?session_id=session-${Date.now()}`);
         } finally {
             setIsLoading(false);
@@ -73,6 +84,27 @@ export default function LandingPage() {
                                         {isLoading ? t('hero.starting') : t('hero.startScreening')}
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Emergency contacts toggle */}
+                            <div className="max-w-lg">
+                                <button
+                                    onClick={() => setShowContacts(!showContacts)}
+                                    className="text-xs font-semibold text-primary/80 hover:text-primary transition-colors cursor-pointer"
+                                >
+                                    {showContacts ? '▾' : '▸'} {t('caregiver.title')}
+                                </button>
+                                {showContacts && (
+                                    <div className="mt-3 space-y-3 bg-background-light/50 border border-primary/10 rounded-xl p-4">
+                                        <p className="text-[11px] text-background-dark/60 font-medium">{t('caregiver.subtitle')}</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <input type="text" placeholder={t('caregiver.name')} value={caregiverName} onChange={e => setCaregiverName(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                                            <input type="tel" placeholder={t('caregiver.phone')} value={caregiverPhone} onChange={e => setCaregiverPhone(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                                            <input type="text" placeholder={t('caregiver.medName')} value={medName} onChange={e => setMedName(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                                            <input type="tel" placeholder={t('caregiver.medPhone')} value={medPhone} onChange={e => setMedPhone(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-4 text-xs text-background-dark/60 font-medium">
