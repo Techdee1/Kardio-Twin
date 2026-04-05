@@ -2,6 +2,8 @@
 
 **Version:** 1.0 | **Date:** February 21, 2026 | **Status:** FINAL — Ready for 24-Hour Sprint
 
+> Implementation Note (April 2026): The live demo currently uses a default 5-reading calibration cycle for faster UX. Product target language in this PRD may still reference a 15-reading flow.
+
 ---
 
 ## 1. Mission & Theme Alignment

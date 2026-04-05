@@ -5,6 +5,8 @@
 **Owner:** AI Engineer (Person 2)  
 **Status:** READY FOR IMPLEMENTATION
 
+> Implementation Note (April 2026): The current deployed/demo pipeline uses a default 5-reading calibration requirement for faster onboarding. This specification still contains the original 15-reading target in several sections.
+
 ---
 
 ## 1. Executive Summary

@@ -3,6 +3,8 @@
 **Version:** 2.0 | **Date:** February 22, 2026 | **Owner:** Hardware Engineer (Person 1)
 **Status:** FINAL — Revised to match actual components on hand
 
+> Implementation Note (April 2026): Runtime calibration in the active stack currently defaults to 5 readings for faster demos. Historical references to 15 readings are original target specs.
+
 ---
 
 ## 1. Purpose

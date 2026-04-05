@@ -4,7 +4,7 @@ A real-time cardiac digital twin system that analyzes biometric data to provide 
 
 ## Features
 
-- **Baseline Calibration**: Adaptive personalized baselines from 12+ readings
+- **Baseline Calibration**: Fast baseline setup (default 5 readings, configurable)
 - **Multi-metric Scoring**: Heart rate, HRV, SpO2, and temperature analysis
 - **CardioTwin Score**: Weighted composite health score (0-100)
 - **Zone Classification**: GREEN/YELLOW/ORANGE/RED health zones with urgency levels
@@ -12,6 +12,7 @@ A real-time cardiac digital twin system that analyzes biometric data to provide 
 - **AI-Powered Nudges**: Contextual wellness messages via Groq LLM
 - **Risk Projection**: Future health trajectory predictions
 - **What-If Scenarios**: Simulate intervention impacts
+- **Multi-Source Runtime Modes**: Simulator, Hardware, Manual, and Hybrid data paths
 
 ## Installation
 
@@ -42,15 +43,15 @@ from ai_engine.nudges import Language
 
 # Initialize engine
 engine = CardioTwinEngine({
-    "calibration_readings": 15,
+    "calibration_readings": 5,
     "enable_anomaly_detection": True,
 })
 
 # Create a user session
 session_id = engine.create_session("user_001", language=Language.ENGLISH)
 
-# Process biometric readings (calibration: 15+ readings)
-for _ in range(15):
+# Process biometric readings (calibration: first 5 readings by default)
+for _ in range(5):
     result = engine.process_reading(session_id, {
         "heart_rate": 70,
         "hrv": 50,
@@ -98,7 +99,7 @@ CardioTwinEngine(config: dict = None)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `calibration_readings` | int | 15 | Readings needed for baseline |
+| `calibration_readings` | int | 5 | Readings needed for baseline |
 | `max_readings_history` | int | 1000 | Max readings to retain |
 | `enable_anomaly_detection` | bool | True | Enable anomaly alerts |
 
@@ -188,7 +189,7 @@ Personalized baseline calibration algorithm.
 ```python
 from ai_engine.baseline import calibrate_baseline
 
-readings = [{"bpm": 70, "hrv": 50, "spo2": 98, "temperature": 36.6}] * 12
+readings = [{"bpm": 70, "hrv": 50, "spo2": 98, "temperature": 36.6}] * 5
 baseline = calibrate_baseline(readings)
 # Returns: PersonalBaseline with personalized reference values
 ```
@@ -281,6 +282,32 @@ steps = get_improvement_path(current_score=55.0)
 
 ## Configuration
 
+### Local Full-Stack Run
+
+```bash
+# Backend API (repo root)
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Frontend app (new terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend defaults to the deployed API. To target local backend, create `frontend/.env.local`:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+VITE_DATA_SOURCE_MODE=hybrid
+```
+
+Supported frontend data-source modes:
+
+- `simulator`: mock biometric stream to `/api/reading`
+- `hardware`: poll `/api/score/{session_id}` for live hardware sessions
+- `manual`: manual entry via `/api/reading/manual`
+- `hybrid`: hardware polling + manual entry
+
 ### Environment Variables
 
 | Variable | Required | Description |
@@ -294,7 +321,7 @@ steps = get_improvement_path(current_score=55.0)
 ```python
 config = {
     # Calibration
-    "calibration_readings": 15,      # Readings for baseline (min: 12)
+    "calibration_readings": 5,       # Readings for baseline
     
     # History
     "max_readings_history": 1000,    # Max readings to retain

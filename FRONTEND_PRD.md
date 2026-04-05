@@ -6,6 +6,8 @@
 **Backend URL:** https://cardiotwin-jqrct.ondigitalocean.app  
 **API Docs:** https://cardiotwin-jqrct.ondigitalocean.app/docs
 
+> Implementation Note (April 2026): Current dashboard behavior calibrates with a default of 5 readings (backend-configurable). Some sections below describe the original 15-reading target flow.
+
 ---
 
 ## 1. Executive Summary
