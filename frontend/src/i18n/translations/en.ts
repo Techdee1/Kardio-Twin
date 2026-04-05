@@ -68,7 +68,7 @@ const en: Record<string, string> = {
 
     // Dashboard header
     'dash.liveStatus': 'Live Status',
-    'dash.digitalTwin': 'Digital Twin',
+    'dash.digitalTwin': 'Wellness Monitor',
     'dash.calibrating': 'Calibrating',
     'dash.liveMonitoring': 'Live Monitoring',
     'dash.session': 'Session',
@@ -101,6 +101,7 @@ const en: Record<string, string> = {
     'sidebar.projection': 'What-If',
     'sidebar.history': 'History',
     'sidebar.settings': 'Settings',
+    'sidebar.manual': 'Manual Entry',
     'sidebar.exit': 'Exit Dashboard',
 
     // Nudge panel
@@ -156,6 +157,41 @@ const en: Record<string, string> = {
     'demo.mildStrain': 'Mild Strain',
     'demo.elevatedRisk': 'Elevated Risk',
     'demo.criticalStrain': 'Critical Strain',
+
+    // Manual input
+    'manual.title': 'Manual Reading',
+    'manual.subtitle': 'Enter your vitals manually when hardware is unavailable',
+    'manual.bpm': 'Heart Rate (BPM)',
+    'manual.hrv': 'HRV (ms)',
+    'manual.spo2': 'SpO₂ (%)',
+    'manual.temp': 'Temperature (°C)',
+    'manual.systolic': 'Systolic BP (mmHg)',
+    'manual.diastolic': 'Diastolic BP (mmHg)',
+    'manual.submit': 'Submit Reading',
+    'manual.submitting': 'Submitting...',
+    'manual.success': 'Reading submitted successfully',
+    'manual.bpOptional': 'Blood pressure is optional',
+    'manual.required': 'Heart rate is required',
+
+    // Caregiver / medical professional
+    'caregiver.title': 'Emergency Contacts (Optional)',
+    'caregiver.subtitle': 'Add a caregiver or medical professional to be notified via WhatsApp if your readings need attention.',
+    'caregiver.name': 'Caregiver Name',
+    'caregiver.phone': 'Caregiver Phone',
+    'caregiver.medName': 'Doctor / Nurse Name',
+    'caregiver.medPhone': 'Doctor / Nurse Phone',
+
+    // Safety / disclaimers
+    'safety.disclaimer': 'Wellness screening tool only — not a medical diagnosis.',
+    'safety.seekHelp': 'If you feel unwell, trust your body. Seek medical attention.',
+    'safety.emergency': 'If you experience chest pain, severe shortness of breath, fainting, or confusion, call emergency services immediately.',
+
+    // Alert feedback
+    'feedback.wasHelpful': 'Was this alert helpful?',
+    'feedback.helpful': 'Helpful',
+    'feedback.notHelpful': 'Not Helpful',
+    'feedback.falseAlarm': 'False Alarm',
+    'feedback.thanks': 'Thank you for your feedback',
 
     // Language names
     'lang.en': 'English',
