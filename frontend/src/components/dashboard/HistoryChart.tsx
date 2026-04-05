@@ -105,15 +105,15 @@ export default function HistoryChart({ sessionId }: HistoryChartProps) {
     return (
         <div className="h-full flex flex-col bg-white/80 backdrop-blur-md rounded-3xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-background-dark/5">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-background-dark/5">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-indigo-100 border border-indigo-200">
-                            <BarChart3 className="w-5 h-5 text-indigo-600" />
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-100 border border-indigo-200">
+                            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-background-dark">{t('history.title')}</h3>
-                            <p className="text-xs text-background-dark/60 flex items-center gap-1">
+                            <h3 className="text-base sm:text-lg font-bold text-background-dark">{t('history.title')}</h3>
+                            <p className="text-[10px] sm:text-xs text-background-dark/60 flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {t('history.subtitle')}
                             </p>
@@ -129,7 +129,7 @@ export default function HistoryChart({ sessionId }: HistoryChartProps) {
                 </div>
 
                 {/* Metric selector */}
-                <div className="flex gap-2 mt-4 flex-wrap">
+                <div className="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4 flex-wrap">
                     {metrics.map((metric) => (
                         <button
                             key={metric.key}
@@ -220,7 +220,7 @@ export default function HistoryChart({ sessionId }: HistoryChartProps) {
 
             {/* Legend for score zones */}
             {selectedMetric === 'score' && history.length > 0 && (
-                <div className="px-6 pb-4 flex justify-center gap-4">
+                <div className="px-4 sm:px-6 pb-3 sm:pb-4 flex justify-center gap-2 sm:gap-4 flex-wrap">
                     {[
                         { label: t('history.zoneGreen'), color: '#10b981', threshold: '≥80' },
                         { label: t('history.zoneYellow'), color: '#f59e0b', threshold: '55-79' },
