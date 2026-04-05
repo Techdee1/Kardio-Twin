@@ -2,12 +2,24 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://cardio
 
 export interface StartSessionRequest {
     session_id: string;
-    user_id: string;
+    user_phone?: string;
+    caregiver_phone?: string;
+    caregiver_name?: string;
+    medical_professional_phone?: string;
+    medical_professional_name?: string;
 }
 
 export interface ComponentScore {
     value: number;
     score: number;
+}
+
+export interface SafetyInfo {
+    is_safe: boolean;
+    escalation: string;
+    red_flags: string[];
+    safe_next_step: string;
+    seek_help_message?: string;
 }
 
 export interface ScoreResponse {
@@ -17,6 +29,11 @@ export interface ScoreResponse {
     zone_emoji: string;
     alert?: boolean;
     nudge_sent?: boolean;
+    source?: string;
+    signal_quality?: string;
+    signal_confidence?: number;
+    safety?: SafetyInfo;
+    disclaimer?: string;
     components: {
         heart_rate: ComponentScore;
         hrv: ComponentScore;
@@ -29,6 +46,24 @@ export interface ScoreResponse {
         normal_spo2: number;
         normal_temp: number;
     };
+}
+
+export interface ManualReadingRequest {
+    session_id: string;
+    bpm: number;
+    hrv?: number;
+    spo2?: number;
+    temperature?: number;
+    systolic_bp?: number;
+    diastolic_bp?: number;
+}
+
+export interface AlertFeedbackRequest {
+    session_id: string;
+    reading_id?: number;
+    alert_type: string;
+    feedback: 'helpful' | 'not_helpful' | 'false_alarm';
+    comment?: string;
 }
 
 export interface HistoryEntry {
@@ -126,6 +161,26 @@ export const api = {
             body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error('Failed to submit reading');
+        return res.json();
+    },
+
+    async submitManualReading(data: ManualReadingRequest) {
+        const res = await fetch(`${API_BASE_URL}/api/reading/manual`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Failed to submit manual reading');
+        return res.json();
+    },
+
+    async submitAlertFeedback(data: AlertFeedbackRequest) {
+        const res = await fetch(`${API_BASE_URL}/api/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Failed to submit feedback');
         return res.json();
     },
 };
