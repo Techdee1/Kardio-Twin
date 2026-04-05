@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
@@ -34,6 +34,8 @@ function formatSourceLabel(source?: string): string {
     return source.replace(/_/g, ' ').trim().toUpperCase();
 }
 
+const SOURCE_SWITCH_DEBOUNCE_MS = 1500;
+
 export default function DashboardPage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -59,6 +61,7 @@ export default function DashboardPage() {
     const [showNudge, setShowNudge] = useState(false);
     const [isLoadingNudge, setIsLoadingNudge] = useState(false);
     const [activeSource, setActiveSource] = useState<string>(formatSourceLabel(DATA_SOURCE_MODE));
+    const sourceDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Initial load check
     useEffect(() => {
@@ -78,13 +81,37 @@ export default function DashboardPage() {
         }
     }, [activeView]);
 
+    const requestSourceSwitch = useCallback((nextSource?: string) => {
+        const normalizedSource = formatSourceLabel(nextSource);
+        if (normalizedSource === activeSource) {
+            return;
+        }
+
+        if (sourceDebounceTimerRef.current) {
+            clearTimeout(sourceDebounceTimerRef.current);
+        }
+
+        sourceDebounceTimerRef.current = setTimeout(() => {
+            setActiveSource(normalizedSource);
+            sourceDebounceTimerRef.current = null;
+        }, SOURCE_SWITCH_DEBOUNCE_MS);
+    }, [activeSource]);
+
+    useEffect(() => {
+        return () => {
+            if (sourceDebounceTimerRef.current) {
+                clearTimeout(sourceDebounceTimerRef.current);
+            }
+        };
+    }, []);
+
 
     const [calibration, setCalibration] = useState<{ active: boolean, progress: number }>({ active: true, progress: 0 });
 
     // Handle reading response from sensor simulator
     const handleReadingResponse = useCallback((_reading: any, response: any) => {
         console.log('[Dashboard] handleReadingResponse called:', response);
-        setActiveSource(formatSourceLabel(response?.source || 'simulator'));
+        requestSourceSwitch(response?.source || 'simulator');
 
         if (response.status === 'calibrating') {
             setCalibration({
@@ -103,7 +130,7 @@ export default function DashboardPage() {
                 trend: response.zone_label || 'Optimal'
             });
         }
-    }, []);
+    }, [requestSourceSwitch]);
 
     // Sensor simulator - sends mock biometric data to backend
     // This simulates what the hardware would do in production
@@ -132,13 +159,13 @@ export default function DashboardPage() {
                 const data: any = await api.getScore(sessionId);
 
                 if (data.status === 'calibrating') {
-                    setActiveSource(formatSourceLabel(data.source || 'hardware'));
+                    requestSourceSwitch(data.source || 'hardware');
                     setCalibration({
                         active: true,
                         progress: (data.readings_collected || 0) / (data.readings_needed || 15)
                     });
                 } else if (data.status === 'scored') {
-                    setActiveSource(formatSourceLabel(data.source || 'hardware'));
+                    requestSourceSwitch(data.source || 'hardware');
                     setCalibration({ active: false, progress: 1 });
                     setLiveVitals(prev => ({
                         ...prev,
@@ -169,7 +196,7 @@ export default function DashboardPage() {
         const interval = setInterval(pollScore, 2000);
         pollScore(); // Initial fetch
         return () => clearInterval(interval);
-    }, [activeView, sessionId, simulatorEnabled]);
+    }, [activeView, requestSourceSwitch, sessionId, simulatorEnabled]);
 
     // On-demand nudge fetch
     const fetchNudge = useCallback(async () => {
@@ -425,7 +452,7 @@ export default function DashboardPage() {
                     {activeView === 'manual' && sessionId && (
                         <div className="max-w-lg mx-auto py-4 sm:py-8">
                             <ManualInputPanel sessionId={sessionId} onReadingSubmitted={(result) => {
-                                setActiveSource(formatSourceLabel(result?.source || 'manual'));
+                                requestSourceSwitch(result?.source || 'manual');
                                 if (result.status === 'scored' && result.components) {
                                     setCalibration({ active: false, progress: 1 });
                                     setLiveVitals({
