@@ -13,7 +13,7 @@ import { OrbitControls, Environment } from '@react-three/drei';
 import { HealthAvatar } from '../components/HealthAvatar';
 import { useLanguage, LANGUAGE_OPTIONS } from '../i18n/LanguageContext';
 import { useSensorSimulator } from '../hooks/useSensorSimulator';
-import { ENABLE_SIMULATOR } from '../config/dataSource';
+import { ENABLE_SCORE_POLLING, ENABLE_SIMULATOR } from '../config/dataSource';
 
 export interface Vitals {
     heartRate: number;
@@ -92,12 +92,12 @@ export default function DashboardPage() {
     // Fallback: Poll Score API only if sensor simulator isn't providing data
     // This is mainly for when connecting to real hardware that doesn't use the simulator
     useEffect(() => {
-        if (activeView !== 'overview' || !sessionId) return;
-        
-        // Skip polling if we're using the sensor simulator (which provides data via onReading)
-        // Only poll as a fallback for real hardware connections
-        const skipPolling = true; // Sensor simulator is active
-        if (skipPolling) return;
+        const shouldPollScore = ENABLE_SCORE_POLLING
+            && activeView === 'overview'
+            && !!sessionId
+            && !simulatorEnabled;
+
+        if (!shouldPollScore) return;
 
         const pollScore = async () => {
             try {
@@ -109,16 +109,16 @@ export default function DashboardPage() {
                         active: true,
                         progress: (data.readings_collected || 0) / (data.readings_needed || 15)
                     });
-                } else if (data.components) {
+                } else if (data.status === 'scored') {
                     setCalibration({ active: false, progress: 1 });
                     setLiveVitals(prev => ({
                         ...prev,
-                        heartRate: Math.round(data.components.heart_rate.value),
-                        hrv: Math.round(data.components.hrv.value),
-                        spO2: Math.round(data.components.spo2.value),
-                        skinTemp: data.components.temperature.value,
-                        score: Math.round(data.score),
-                        trend: data.zone_label || 'Optimal'
+                        heartRate: data.components ? Math.round(data.components.heart_rate.value) : prev.heartRate,
+                        hrv: data.components ? Math.round(data.components.hrv.value) : prev.hrv,
+                        spO2: data.components ? Math.round(data.components.spo2.value) : prev.spO2,
+                        skinTemp: data.components ? data.components.temperature.value : prev.skinTemp,
+                        score: data.score !== undefined ? Math.round(data.score) : prev.score,
+                        trend: data.zone_label || prev.trend || 'Optimal'
                     }));
                 }
             } catch (err) {
@@ -140,7 +140,7 @@ export default function DashboardPage() {
         const interval = setInterval(pollScore, 2000);
         pollScore(); // Initial fetch
         return () => clearInterval(interval);
-    }, [activeView, sessionId]);
+    }, [activeView, sessionId, simulatorEnabled]);
 
     // On-demand nudge fetch
     const fetchNudge = useCallback(async () => {
