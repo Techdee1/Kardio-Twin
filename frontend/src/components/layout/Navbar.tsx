@@ -1,10 +1,11 @@
-import { Heart, Globe, ChevronDown } from 'lucide-react';
+import { Heart, Globe, ChevronDown, Menu, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage, LANGUAGE_OPTIONS } from '../../i18n/LanguageContext';
 
 export default function Navbar() {
     const { lang, setLang, t } = useLanguage();
     const [langOpen, setLangOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Close dropdown on outside click
@@ -23,13 +24,23 @@ export default function Navbar() {
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-20 items-center">
+                <div className="flex justify-between h-16 md:h-20 items-center">
                     <div className="flex items-center gap-2 text-primary">
-                        <Heart className="w-8 h-8 fill-primary stroke-primary" />
-                        <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                        <Heart className="w-7 h-7 md:w-8 md:h-8 fill-primary stroke-primary" />
+                        <span className="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                             CardioTwin<span className="text-primary">AI</span>
                         </span>
                     </div>
+
+                    {/* Mobile menu button */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden p-2 rounded-lg hover:bg-primary/10 transition-colors text-background-dark"
+                    >
+                        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
+
+                    {/* Desktop nav */}
                     <div className="hidden md:flex items-center gap-8">
                         <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">{t('nav.howItWorks')}</a>
                         <a href="#security" className="text-sm font-medium hover:text-primary transition-colors">{t('nav.security')}</a>
@@ -74,6 +85,40 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
+
+            {/* Mobile menu panel */}
+            {mobileMenuOpen && (
+                <div className="md:hidden border-t border-primary/10 bg-white/95 backdrop-blur-md">
+                    <div className="px-4 py-4 space-y-3">
+                        <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium hover:bg-primary/10 hover:text-primary transition-colors">{t('nav.howItWorks')}</a>
+                        <a href="#security" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium hover:bg-primary/10 hover:text-primary transition-colors">{t('nav.security')}</a>
+                        <a href="#impact" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 rounded-xl text-sm font-medium hover:bg-primary/10 hover:text-primary transition-colors">{t('nav.impact')}</a>
+
+                        {/* Mobile language switcher */}
+                        <div className="px-4 py-3">
+                            <p className="text-xs font-bold text-background-dark/40 uppercase tracking-wider mb-2">Language</p>
+                            <div className="flex flex-wrap gap-2">
+                                {LANGUAGE_OPTIONS.map((option) => (
+                                    <button
+                                        key={option.code}
+                                        onClick={() => { setLang(option.code); setMobileMenuOpen(false); }}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${lang === option.code
+                                                ? 'bg-primary/10 text-primary border border-primary/20'
+                                                : 'bg-background-light text-background-dark/70'
+                                            }`}
+                                    >
+                                        {option.flag} {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button className="w-full bg-primary hover:bg-primary/90 text-background-dark px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20">
+                            {t('nav.getStarted')}
+                        </button>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }
