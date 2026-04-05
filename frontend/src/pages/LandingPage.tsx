@@ -32,7 +32,7 @@ export default function LandingPage() {
     };
     return (
         <>
-            <main className="relative overflow-hidden pt-16 pb-24 lg:pt-32 lg:pb-40 bg-white">
+            <main className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-32 lg:pb-40 bg-white">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-10 pointer-events-none">
                     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary blur-[120px] rounded-full"></div>
                     <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-primary blur-[100px] rounded-full"></div>
@@ -42,10 +42,10 @@ export default function LandingPage() {
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         <div className="flex flex-col gap-8">
                             <div className="space-y-4">
-                                <h1 className="text-5xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-background-dark">
+                                <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-background-dark">
                                     {t('hero.title1')} <span className="text-primary italic font-serif">{t('hero.title2')}</span> {t('hero.title3')}
                                 </h1>
-                                <p className="text-lg lg:text-xl text-background-dark/70 max-w-xl leading-relaxed font-light">
+                                <p className="text-base sm:text-lg lg:text-xl text-background-dark/70 max-w-xl leading-relaxed font-light">
                                     {t('hero.subtitle')}
                                 </p>
                             </div>
@@ -129,12 +129,12 @@ export default function LandingPage() {
             </main>
 
             {/* How It Works / Patient Benefits */}
-            <section id="how-it-works" className="py-24 bg-background-light relative">
+            <section id="how-it-works" className="py-16 sm:py-24 bg-background-light relative">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
+                    <div className="text-center mb-12 sm:mb-20">
                         <h2 className="text-primary font-bold text-sm uppercase tracking-[0.2em] mb-4">{t('howItWorks.tag')}</h2>
-                        <h3 className="text-4xl md:text-5xl font-extrabold text-background-dark tracking-tight">{t('howItWorks.title')}</h3>
-                        <p className="mt-4 text-background-dark/70 max-w-2xl mx-auto text-lg font-light">
+                        <h3 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-background-dark tracking-tight">{t('howItWorks.title')}</h3>
+                        <p className="mt-3 sm:mt-4 text-background-dark/70 max-w-2xl mx-auto text-base sm:text-lg font-light">
                             {t('howItWorks.subtitle')}
                         </p>
                     </div>
@@ -177,11 +177,11 @@ export default function LandingPage() {
             </section>
 
             {/* Security & Trust */}
-            <section id="security" className="py-24 bg-white relative overflow-hidden">
+            <section id="security" className="py-16 sm:py-24 bg-white relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row gap-16 items-center">
-                        <div className="flex-1 space-y-8">
-                            <h2 className="text-4xl font-extrabold text-background-dark">
+                    <div className="flex flex-col lg:flex-row gap-10 sm:gap-16 items-center">
+                        <div className="flex-1 space-y-6 sm:space-y-8">
+                            <h2 className="text-2xl sm:text-4xl font-extrabold text-background-dark">
                                 {t('security.title1')} <span className="text-primary italic font-serif">{t('security.title2')}</span>
                             </h2>
                             <p className="text-lg text-background-dark/70 leading-relaxed font-light">
@@ -207,7 +207,7 @@ export default function LandingPage() {
                         </div>
 
                         <div className="flex-1 w-full max-w-lg">
-                            <div className="relative rounded-[2rem] bg-white p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] overflow-hidden border border-background-light border-2">
+                            <div className="relative rounded-2xl sm:rounded-[2rem] bg-white p-5 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] overflow-hidden border-2 border-background-light">
                                 <div className="absolute top-0 right-0 p-6 opacity-5">
                                     <Shield className="w-32 h-32 text-background-dark" />
                                 </div>
@@ -243,15 +243,15 @@ export default function LandingPage() {
             </section>
 
             {/* Final CTA */}
-            <section className="py-32 bg-background-light relative overflow-hidden">
+            <section className="py-16 sm:py-24 md:py-32 bg-background-light relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
 
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <div className="bg-white p-12 md:p-16 rounded-[3rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] border border-white border-2 relative overflow-hidden">
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-background-dark mb-6 tracking-tight">
+                    <div className="bg-white p-6 sm:p-12 md:p-16 rounded-2xl sm:rounded-[3rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] border border-white border-2 relative overflow-hidden">
+                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-background-dark mb-6 tracking-tight">
                             {t('cta.title1')} <br className="hidden sm:block" /> <span className="text-primary italic font-serif">{t('cta.title2')}</span> {t('cta.title3')}
                         </h2>
-                        <p className="text-background-dark/70 mb-10 text-lg md:text-xl max-w-2xl mx-auto font-light">
+                        <p className="text-background-dark/70 mb-8 sm:mb-10 text-base sm:text-lg md:text-xl max-w-2xl mx-auto font-light">
                             {t('cta.subtitle')}
                         </p>
 
