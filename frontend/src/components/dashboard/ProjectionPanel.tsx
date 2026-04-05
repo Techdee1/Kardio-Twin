@@ -70,15 +70,15 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
     return (
         <div className="h-full flex flex-col bg-white/80 backdrop-blur-md rounded-3xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-background-dark/5">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-background-dark/5">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-purple-100 border border-purple-200">
-                            <Calendar className="w-5 h-5 text-purple-600" />
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 rounded-xl bg-purple-100 border border-purple-200">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-background-dark">{t('projection.title')}</h3>
-                            <p className="text-xs text-background-dark/60">{t('projection.subtitle')}</p>
+                            <h3 className="text-base sm:text-lg font-bold text-background-dark">{t('projection.title')}</h3>
+                            <p className="text-[10px] sm:text-xs text-background-dark/60">{t('projection.subtitle')}</p>
                         </div>
                     </div>
                     <button
@@ -91,12 +91,12 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                 </div>
 
                 {/* Days selector */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4 flex-wrap">
                     {[7, 14, 30, 60].map((d) => (
                         <button
                             key={d}
                             onClick={() => setDays(d)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 days === d
                                     ? 'bg-primary text-white shadow-md'
                                     : 'bg-background-light text-background-dark/60 hover:bg-primary/10'
@@ -108,11 +108,11 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                 </div>
 
                 {/* Scenario input */}
-                <div className="mt-4 space-y-2">
+                <div className="mt-3 sm:mt-4 space-y-2">
                     <label className="text-xs font-bold text-background-dark/70 uppercase tracking-wide">
                         {t('projection.scenarioLabel')}
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input
                             type="text"
                             value={scenario}
@@ -142,7 +142,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
                 {error ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                         <AlertTriangle className="w-12 h-12 text-orange-400 mb-3" />
@@ -160,22 +160,22 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                         <p className="mt-3 text-sm text-background-dark/60">{t('projection.loading')}</p>
                     </div>
                 ) : prediction ? (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                         {/* Dual Avatar Comparison */}
-                        <div className="flex items-center justify-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                             {/* Current Avatar */}
-                            <div className="text-center flex-1">
+                            <div className="text-center flex-1 w-full">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-background-dark/40">
                                     {t('projection.today')}
                                 </span>
-                                <div className="h-40 w-full bg-gradient-to-b from-background-light/50 to-transparent rounded-2xl overflow-hidden">
+                                <div className="h-32 sm:h-40 w-full bg-gradient-to-b from-background-light/50 to-transparent rounded-2xl overflow-hidden">
                                     <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
                                         <Suspense fallback={null}>
                                             <ambientLight intensity={0.5} />
                                             <directionalLight position={[5, 5, 5]} intensity={1} />
                                             <Environment preset="city" />
-                                            <HealthAvatar 
-                                                score={currentScore} 
+                                            <HealthAvatar
+                                                score={currentScore}
                                                 vitals={currentVitals}
                                             />
                                             <OrbitControls enablePan={false} enableZoom={false} />
@@ -193,33 +193,33 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                             </div>
 
                             {/* Arrow */}
-                            <div className="flex flex-col items-center gap-1 px-2">
-                                <ArrowRight className="w-6 h-6 text-background-dark/30" />
+                            <div className="flex sm:flex-col items-center gap-1 px-2">
+                                <ArrowRight className="w-6 h-6 text-background-dark/30 rotate-90 sm:rotate-0" />
                                 <span className="text-[10px] font-bold text-background-dark/40">
                                     {days}d
                                 </span>
                             </div>
 
                             {/* Projected Avatar */}
-                            <div className="text-center flex-1">
+                            <div className="text-center flex-1 w-full">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-background-dark/40">
                                     {t('projection.projected')}
                                 </span>
-                                <div className="h-40 w-full bg-gradient-to-b from-background-light/50 to-transparent rounded-2xl overflow-hidden relative">
+                                <div className="h-32 sm:h-40 w-full bg-gradient-to-b from-background-light/50 to-transparent rounded-2xl overflow-hidden relative">
                                     {/* Hologram overlay effect */}
                                     <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent pointer-events-none z-10" />
-                                    <div className="absolute inset-0 opacity-20 pointer-events-none z-10" 
-                                         style={{ 
-                                             background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(147,51,234,0.1) 2px, rgba(147,51,234,0.1) 4px)' 
-                                         }} 
+                                    <div className="absolute inset-0 opacity-20 pointer-events-none z-10"
+                                         style={{
+                                             background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(147,51,234,0.1) 2px, rgba(147,51,234,0.1) 4px)'
+                                         }}
                                     />
                                     <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
                                         <Suspense fallback={null}>
                                             <ambientLight intensity={0.4} />
                                             <directionalLight position={[5, 5, 5]} intensity={0.8} />
                                             <Environment preset="city" />
-                                            <HealthAvatar 
-                                                score={prediction.projected_score} 
+                                            <HealthAvatar
+                                                score={prediction.projected_score}
                                                 vitals={currentVitals}
                                             />
                                             <OrbitControls enablePan={false} enableZoom={false} />
