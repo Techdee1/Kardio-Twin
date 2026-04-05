@@ -164,37 +164,37 @@ export default function DashboardPage() {
 
 
     return (
-        <div className="bg-background-light text-background-dark h-screen overflow-hidden font-display flex flex-col">
+        <div className="bg-background-light text-background-dark h-screen overflow-hidden font-display flex flex-col pb-16 md:pb-0">
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white/95 backdrop-blur-md shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
-                <div className="w-full px-6 h-16 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-3">
-                        <div className="text-primary bg-primary/10 p-2 rounded-xl">
-                            <Activity className="w-6 h-6" />
+                <div className="w-full px-3 sm:px-6 h-14 md:h-16 flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-2 sm:gap-3">
+                        <div className="text-primary bg-primary/10 p-1.5 sm:p-2 rounded-xl">
+                            <Activity className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight">CardioTwin <span className="text-primary italic font-serif">AI</span></h1>
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight">CardioTwin <span className="text-primary italic font-serif">AI</span></h1>
                         </div>
                     </Link>
 
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 shadow-sm">
+                    <div className="flex items-center gap-2 sm:gap-6">
+                        <div className="flex items-center gap-1.5 sm:gap-2 bg-primary/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-primary/20 shadow-sm">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                             </span>
-                            <span className="text-xs font-bold uppercase tracking-wider text-primary">{t('dash.liveStatus')}</span>
+                            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-primary">{t('dash.liveStatus')}</span>
                         </div>
-                        <div className="h-8 w-[1px] bg-background-dark/10"></div>
-                        <div className="flex items-center gap-3">
+                        <div className="hidden sm:block h-8 w-[1px] bg-background-dark/10"></div>
+                        <div className="flex items-center gap-2 sm:gap-3">
                             <button
                                 onClick={() => setActiveView('settings')}
-                                className="p-2 bg-background-light hover:bg-primary/10 rounded-xl transition-colors text-background-dark/60 hover:text-primary relative shadow-sm border border-transparent hover:border-primary/20"
+                                className="p-1.5 sm:p-2 bg-background-light hover:bg-primary/10 rounded-xl transition-colors text-background-dark/60 hover:text-primary relative shadow-sm border border-transparent hover:border-primary/20"
                             >
-                                <Bell className="w-5 h-5" />
-                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+                                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
                             </button>
-                            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm">
                                 <img
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWXOkTJMP_6l_TFoYjjjmGFjdU6zuDygl_fyTXXnHnGQmH6D8Uea5Vsepca75gCDkc4FztOnI9hV-AAFUzuWPquePJvfdmd9Z7VVjfd-a6IMk9m0SLbuTvSu_s-en5fL3C0vrE89DgKJaOrAZMcefaritp3iJbH1TFSZZTJCMYQFCQSbvXn8mXYKTLbpbniUh_Tld86lZN6eMTc_9F7X-DcwFKoeqNB8khRla_bbGvXdmGtr55EjrWULm-3ln3lE35aD04nOukHAw"
                                     alt="Medical professional"
@@ -209,12 +209,12 @@ export default function DashboardPage() {
             <div className="flex flex-1 overflow-hidden">
                 <Sidebar activeView={activeView} setActiveView={setActiveView} />
 
-                <main className="flex-1 overflow-y-auto p-6 md:p-8">
+                <main className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8">
                     {activeView === 'overview' && (
-                        <div className="space-y-6 max-w-6xl mx-auto flex flex-col min-h-[calc(100vh-8rem)] pb-8">
-                            <div className="flex items-end justify-between shrink-0 mb-2">
+                        <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto flex flex-col min-h-[calc(100vh-8rem)] pb-8">
+                            <div className="flex flex-col sm:flex-row sm:items-end justify-between shrink-0 mb-2 gap-3">
                                 <div>
-                                    <h2 className="text-3xl font-extrabold flex items-center gap-3 tracking-tight">
+                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold flex flex-wrap items-center gap-2 sm:gap-3 tracking-tight">
                                         CardioTwin <span className="italic font-serif text-primary font-normal">{t('dash.digitalTwin')}</span>
                                         {calibration.active ? (
                                             <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-orange-100 text-orange-600 border border-orange-200 shadow-sm animate-pulse">
@@ -226,21 +226,22 @@ export default function DashboardPage() {
                                             </span>
                                         )}
                                     </h2>
-                                    <p className="text-background-dark/60 mt-1 font-medium">{t('dash.session')}: {sessionId} • {t('dash.realtimeSync')}</p>
+                                    <p className="text-background-dark/60 mt-1 font-medium text-xs sm:text-sm truncate max-w-[280px] sm:max-w-none">{t('dash.session')}: {sessionId} • {t('dash.realtimeSync')}</p>
                                 </div>
                                 {!calibration.active && (
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3 sm:gap-4">
                                         <button
                                             onClick={fetchNudge}
                                             disabled={isLoadingNudge}
-                                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-all border border-primary/20 hover:border-primary/30 cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-md"
+                                            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs sm:text-sm font-bold transition-all border border-primary/20 hover:border-primary/30 cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-md"
                                         >
                                             <Sparkles className={`w-4 h-4 ${isLoadingNudge ? 'animate-spin' : ''}`} />
-                                            {isLoadingNudge ? t('dash.loading') : t('dash.getAiAdvice')}
+                                            <span className="hidden sm:inline">{isLoadingNudge ? t('dash.loading') : t('dash.getAiAdvice')}</span>
+                                            <span className="sm:hidden">{isLoadingNudge ? '...' : 'AI'}</span>
                                         </button>
                                         <div className="text-right flex flex-col items-end">
-                                            <span className="text-xs uppercase font-bold text-background-dark/50 tracking-wider">{t('dash.healthScore')}</span>
-                                            <span className={`text-5xl font-black ${liveVitals.score >= 80 ? 'text-primary' : liveVitals.score >= 55 ? 'text-yellow-500' : liveVitals.score >= 30 ? 'text-orange-500' : 'text-rose-500'}`}>
+                                            <span className="text-[10px] sm:text-xs uppercase font-bold text-background-dark/50 tracking-wider">{t('dash.healthScore')}</span>
+                                            <span className={`text-3xl sm:text-5xl font-black ${liveVitals.score >= 80 ? 'text-primary' : liveVitals.score >= 55 ? 'text-yellow-500' : liveVitals.score >= 30 ? 'text-orange-500' : 'text-rose-500'}`}>
                                                 {liveVitals.score}
                                             </span>
                                         </div>
@@ -248,16 +249,16 @@ export default function DashboardPage() {
                                 )}
                             </div>
 
-                            <div className="flex-1 relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden flex items-center justify-center min-h-[600px] w-full mt-4">
+                            <div className="flex-1 relative bg-white rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden flex items-center justify-center min-h-[350px] sm:min-h-[450px] md:min-h-[600px] w-full mt-2 sm:mt-4">
                                 {/* Background glow */}
                                 <div className="absolute inset-0 bg-primary/5 opacity-40 pointer-events-none"></div>
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full"></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-primary/10 blur-[120px] rounded-full"></div>
 
                                 {calibration.active ? (
-                                    <div className="relative z-10 flex flex-col items-center max-w-md w-full p-8 text-center bg-white/80 backdrop-blur-md rounded-3xl border border-primary/20 shadow-xl">
-                                        <Activity className="w-12 h-12 text-primary animate-bounce mb-6" />
-                                        <h3 className="text-2xl font-bold text-background-dark mb-2">{t('dash.analyzingBaseline')}</h3>
-                                        <p className="text-background-dark/60 mb-8 font-medium">{t('dash.gatheringSensor')}</p>
+                                    <div className="relative z-10 flex flex-col items-center max-w-md w-full p-5 sm:p-8 mx-3 text-center bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-primary/20 shadow-xl">
+                                        <Activity className="w-10 h-10 sm:w-12 sm:h-12 text-primary animate-bounce mb-4 sm:mb-6" />
+                                        <h3 className="text-xl sm:text-2xl font-bold text-background-dark mb-2">{t('dash.analyzingBaseline')}</h3>
+                                        <p className="text-background-dark/60 mb-6 sm:mb-8 font-medium text-sm sm:text-base">{t('dash.gatheringSensor')}</p>
 
                                         <div className="w-full h-3 bg-background-light rounded-full overflow-hidden border border-background-dark/10">
                                             <div
@@ -271,12 +272,12 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex gap-4 w-full h-full min-h-[600px]">
+                                    <div className="flex flex-col md:flex-row gap-4 w-full h-full min-h-[350px] sm:min-h-[450px] md:min-h-[600px]">
                                         {/* 3D Body Render — shifts left when panel is open */}
-                                        <div className={`relative h-full min-h-[700px] flex items-center justify-center z-10 transition-all duration-500 ease-in-out ${showNudge ? 'flex-[3]' : 'flex-1'}`}>
-                                            <div className="absolute inset-0 translate-y-4 rounded-3xl overflow-hidden pointer-events-auto">
-                                                <Canvas 
-                                                    shadows 
+                                        <div className={`relative h-full min-h-[350px] sm:min-h-[450px] md:min-h-[700px] flex items-center justify-center z-10 transition-all duration-500 ease-in-out ${showNudge ? 'md:flex-[3]' : 'flex-1'}`}>
+                                            <div className="absolute inset-0 translate-y-4 rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-auto">
+                                                <Canvas
+                                                    shadows
                                                     camera={{ position: [0, 1, 6], fov: 35 }}
                                                     dpr={[1, 2]}
                                                     performance={{ min: 0.5 }}
@@ -307,14 +308,14 @@ export default function DashboardPage() {
                                             </div>
 
                                             {/* Bottom Floating Info Panel */}
-                                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-white/90 backdrop-blur-xl p-5 rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-primary/20 flex items-center justify-between z-20">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
-                                                        <BrainCircuit className="w-6 h-6 text-primary" />
+                                            <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 w-[94%] sm:w-[90%] max-w-2xl bg-white/90 backdrop-blur-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-primary/20 flex items-center justify-between z-20">
+                                                <div className="flex items-center gap-2 sm:gap-4">
+                                                    <div className="p-2 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl border border-primary/20">
+                                                        <BrainCircuit className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-background-dark mb-0.5">{t('dash.analysisStatus')}</h4>
-                                                        <p className="text-xs text-background-dark/60 font-medium max-w-md">
+                                                        <h4 className="text-xs sm:text-sm font-bold text-background-dark mb-0.5">{t('dash.analysisStatus')}</h4>
+                                                        <p className="text-[10px] sm:text-xs text-background-dark/60 font-medium max-w-[150px] sm:max-w-md">
                                                             {liveVitals.score >= 80
                                                                 ? t('dash.statusOptimal')
                                                                 : liveVitals.score >= 55
@@ -323,25 +324,39 @@ export default function DashboardPage() {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right pl-4 border-l border-background-dark/10">
-                                                    <span className="text-[10px] font-bold text-background-dark/40 uppercase tracking-widest block mb-1.5 w-max">{t('dash.activeZone')}</span>
-                                                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap ${liveVitals.score >= 80 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : liveVitals.score >= 55 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : liveVitals.score >= 30 ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>
+                                                <div className="text-right pl-2 sm:pl-4 border-l border-background-dark/10">
+                                                    <span className="text-[10px] font-bold text-background-dark/40 uppercase tracking-widest block mb-1 sm:mb-1.5 w-max">{t('dash.activeZone')}</span>
+                                                    <span className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border whitespace-nowrap ${liveVitals.score >= 80 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : liveVitals.score >= 55 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : liveVitals.score >= 30 ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>
                                                         {liveVitals.trend || "Thriving"}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* AI Advice Panel */}
+                                        {/* AI Advice Panel — overlay on mobile, side panel on desktop */}
                                         {showNudge && nudge && (
-                                            <div className="flex-[2] min-w-[280px] max-w-[380px] transition-all duration-500 ease-in-out">
-                                                <NudgePanel
-                                                    nudge={nudge}
-                                                    isLoading={isLoadingNudge}
-                                                    onRefresh={fetchNudge}
-                                                    onClose={() => setShowNudge(false)}
-                                                />
-                                            </div>
+                                            <>
+                                                {/* Mobile: full-screen overlay */}
+                                                <div className="md:hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 pb-20" onClick={() => setShowNudge(false)}>
+                                                    <div className="w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                                        <NudgePanel
+                                                            nudge={nudge}
+                                                            isLoading={isLoadingNudge}
+                                                            onRefresh={fetchNudge}
+                                                            onClose={() => setShowNudge(false)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {/* Desktop: side panel */}
+                                                <div className="hidden md:block flex-[2] min-w-[280px] max-w-[380px] transition-all duration-500 ease-in-out">
+                                                    <NudgePanel
+                                                        nudge={nudge}
+                                                        isLoading={isLoadingNudge}
+                                                        onRefresh={fetchNudge}
+                                                        onClose={() => setShowNudge(false)}
+                                                    />
+                                                </div>
+                                            </>
                                         )}
                                     </div>
                                 )}
@@ -350,9 +365,9 @@ export default function DashboardPage() {
                     )}
 
                     {activeView === 'projection' && sessionId && (
-                        <div className="max-w-4xl mx-auto py-8">
-                            <ProjectionPanel 
-                                sessionId={sessionId} 
+                        <div className="max-w-4xl mx-auto py-4 sm:py-8">
+                            <ProjectionPanel
+                                sessionId={sessionId}
                                 currentScore={liveVitals.score}
                                 currentVitals={{
                                     heartRate: liveVitals.heartRate,
@@ -365,26 +380,26 @@ export default function DashboardPage() {
                     )}
 
                     {activeView === 'history' && sessionId && (
-                        <div className="max-w-4xl mx-auto py-8 h-[calc(100vh-12rem)]">
+                        <div className="max-w-4xl mx-auto py-4 sm:py-8 h-[calc(100vh-10rem)] md:h-[calc(100vh-12rem)]">
                             <HistoryChart sessionId={sessionId} />
                         </div>
                     )}
 
                     {activeView === 'settings' && (
-                        <div className="max-w-2xl mx-auto py-8">
-                            <h2 className="text-3xl font-extrabold text-background-dark mb-8 tracking-tight">{t('settings.title')}</h2>
+                        <div className="max-w-2xl mx-auto py-4 sm:py-8">
+                            <h2 className="text-2xl sm:text-3xl font-extrabold text-background-dark mb-6 sm:mb-8 tracking-tight">{t('settings.title')}</h2>
 
                             {/* Language Settings Card */}
-                            <div className="bg-white rounded-3xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-                                <div className="px-8 py-6 border-b border-background-light">
+                            <div className="bg-white rounded-2xl sm:rounded-3xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                                <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-background-light">
                                     <div className="flex items-center gap-3 mb-1">
                                         <Globe className="w-5 h-5 text-primary" />
-                                        <h3 className="text-lg font-bold text-background-dark">{t('settings.language')}</h3>
+                                        <h3 className="text-base sm:text-lg font-bold text-background-dark">{t('settings.language')}</h3>
                                     </div>
-                                    <p className="text-sm text-background-dark/60 font-medium ml-8">{t('settings.languageDesc')}</p>
+                                    <p className="text-xs sm:text-sm text-background-dark/60 font-medium ml-8">{t('settings.languageDesc')}</p>
                                 </div>
 
-                                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {LANGUAGE_OPTIONS.map((option) => {
                                         const isActive = lang === option.code;
                                         return (
