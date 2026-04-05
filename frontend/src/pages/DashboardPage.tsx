@@ -13,6 +13,7 @@ import { OrbitControls, Environment } from '@react-three/drei';
 import { HealthAvatar } from '../components/HealthAvatar';
 import { useLanguage, LANGUAGE_OPTIONS } from '../i18n/LanguageContext';
 import { useSensorSimulator } from '../hooks/useSensorSimulator';
+import { ENABLE_SIMULATOR } from '../config/dataSource';
 
 export interface Vitals {
     heartRate: number;
@@ -79,9 +80,11 @@ export default function DashboardPage() {
 
     // Sensor simulator - sends mock biometric data to backend
     // This simulates what the hardware would do in production
+    const simulatorEnabled = ENABLE_SIMULATOR && activeView === 'overview' && !!sessionId;
+
     useSensorSimulator({
         sessionId,
-        enabled: activeView === 'overview' && !!sessionId,
+        enabled: simulatorEnabled,
         intervalMs: 1000, // Send reading every 1 second for even faster calibration
         onReading: handleReadingResponse,
     });
