@@ -179,13 +179,10 @@ class CardioTwinAPI:
         self._phone_numbers: Dict[str, str] = {}  # session_id -> phone
         self._nudge_sent: Dict[str, bool] = {}  # Track nudge status per session
 
-    def _confidence_bucket(self, signal_confidence: float, safety_confidence: Optional[str] = None) -> str:
-        if safety_confidence in {"low", "medium", "high"}:
-            return safety_confidence
-
+    def _confidence_bucket(self, signal_confidence: float) -> str:
         if signal_confidence >= 0.8:
             return "high"
-        if signal_confidence >= 0.5:
+        if signal_confidence >= 0.6:
             return "medium"
         return "low"
 
@@ -209,10 +206,13 @@ class CardioTwinAPI:
         retake_required: bool = False,
     ) -> Dict[str, Any]:
         safety_info = safety_info or {}
-        safety_confidence = safety_info.get("confidence")
-        confidence_level = self._confidence_bucket(signal_confidence, safety_confidence)
+        confidence_level = self._confidence_bucket(signal_confidence)
 
-        if retake_required or confidence_level == "low":
+        quality_requires_retake = signal_quality == "poor" or (
+            signal_quality == "ok" and signal_confidence < 0.6
+        )
+
+        if retake_required or quality_requires_retake:
             summary = ActionSummary(
                 status="Retake needed",
                 why=why or "Signal quality is too low to provide a reliable interpretation.",
@@ -291,9 +291,10 @@ class CardioTwinAPI:
         )
         advice_strength = "full"
 
-        if confidence_level == "medium":
+        if confidence_level in {"low", "medium"}:
             resolved_why = f"Preliminary insight: {resolved_why}"
-            resolved_next_step = self.CAUTIOUS_NEXT_STEP
+            if not next_step:
+                resolved_next_step = self.CAUTIOUS_NEXT_STEP
             advice_strength = "cautious"
 
         summary = ActionSummary(
@@ -567,7 +568,7 @@ class CardioTwinAPI:
         safety_info = session.current_safety.to_dict() if session.current_safety else None
         confidence_level = (safety_info or {}).get("confidence", "medium")
         signal_confidence = self._confidence_score_from_level(confidence_level)
-        signal_quality = "good" if signal_confidence >= 0.8 else "ok" if signal_confidence >= 0.5 else "poor"
+        signal_quality = "unknown"
         
         return {
             "status": "scored",
