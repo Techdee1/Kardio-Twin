@@ -88,6 +88,25 @@ class PredictionResponse:
     disclaimer: str = "Statistical projection only. Not a medical diagnosis."
 
 
+@dataclass
+class ActionDriver:
+    code: str
+    label: str
+    detail: str
+
+
+@dataclass
+class ActionSummary:
+    status: str
+    why: str
+    next_step: str
+    if_symptoms: str
+    confidence_level: str
+    signal_quality: str
+    signal_confidence: float
+    drivers: List[Dict[str, str]]
+
+
 class CardioTwinAPI:
     """
     Facade for integrating CardioTwin AI Engine into FastAPI backend.
@@ -102,6 +121,22 @@ class CardioTwinAPI:
         Zone.ORANGE: {"label": "Elevated Risk", "emoji": "🟠"},
         Zone.RED: {"label": "Critical Strain", "emoji": "🔴"},
     }
+
+    ZONE_STATUS = {
+        Zone.GREEN: "Stable",
+        Zone.YELLOW: "Mild concern",
+        Zone.ORANGE: "Elevated concern",
+        Zone.RED: "High concern",
+    }
+
+    DEFAULT_NEXT_STEPS = {
+        Zone.GREEN: "Continue your routine and keep monitoring.",
+        Zone.YELLOW: "Sit, rest for 5 minutes, and retake your reading.",
+        Zone.ORANGE: "Stop activity, rest, hydrate, and retake shortly.",
+        Zone.RED: "Stop activity now and seek urgent support.",
+    }
+
+    DEFAULT_IF_SYMPTOMS = "If chest pain or shortness of breath occurs, seek help now."
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
@@ -120,6 +155,65 @@ class CardioTwinAPI:
         self.engine = CardioTwinEngine(default_config)
         self._phone_numbers: Dict[str, str] = {}  # session_id -> phone
         self._nudge_sent: Dict[str, bool] = {}  # Track nudge status per session
+
+    def _confidence_bucket(self, signal_confidence: float, safety_confidence: Optional[str] = None) -> str:
+        if safety_confidence in {"low", "medium", "high"}:
+            return safety_confidence
+
+        if signal_confidence >= 0.8:
+            return "high"
+        if signal_confidence >= 0.5:
+            return "medium"
+        return "low"
+
+    def _build_action_summary(
+        self,
+        *,
+        zone: Optional[Zone],
+        signal_quality: str,
+        signal_confidence: float,
+        safety_info: Optional[Dict[str, Any]] = None,
+        why: Optional[str] = None,
+        next_step: Optional[str] = None,
+        retake_required: bool = False,
+    ) -> Dict[str, Any]:
+        safety_info = safety_info or {}
+        safety_confidence = safety_info.get("confidence")
+        confidence_level = self._confidence_bucket(signal_confidence, safety_confidence)
+
+        if retake_required:
+            summary = ActionSummary(
+                status="Retake needed",
+                why=why or "Signal quality is too low to provide a reliable interpretation.",
+                next_step=next_step or "Ensure proper sensor contact, stay still, and retake now.",
+                if_symptoms=self.DEFAULT_IF_SYMPTOMS,
+                confidence_level="low",
+                signal_quality=signal_quality,
+                signal_confidence=round(signal_confidence, 2),
+                drivers=[
+                    asdict(
+                        ActionDriver(
+                            code="signal_quality_low",
+                            label="Low signal quality",
+                            detail="Reading confidence is below acceptable threshold.",
+                        )
+                    )
+                ],
+            )
+            return asdict(summary)
+
+        resolved_zone = zone or Zone.YELLOW
+        summary = ActionSummary(
+            status=self.ZONE_STATUS.get(resolved_zone, "Monitor"),
+            why=why or "Based on your latest vitals and trend.",
+            next_step=next_step or safety_info.get("safe_next_step") or self.DEFAULT_NEXT_STEPS.get(resolved_zone, "Retake reading in a few minutes."),
+            if_symptoms=safety_info.get("seek_help_message") or self.DEFAULT_IF_SYMPTOMS,
+            confidence_level=confidence_level,
+            signal_quality=signal_quality,
+            signal_confidence=round(signal_confidence, 2),
+            drivers=[],
+        )
+        return asdict(summary)
     
     def start_session(
         self,
@@ -216,6 +310,13 @@ class CardioTwinAPI:
                 "message": result.retake_message,
                 "signal_quality": result.signal_quality,
                 "signal_confidence": result.signal_confidence,
+                "action_summary": self._build_action_summary(
+                    zone=None,
+                    signal_quality=result.signal_quality,
+                    signal_confidence=result.signal_confidence,
+                    why=result.retake_message,
+                    retake_required=True,
+                ),
             }
 
         session = self.engine.get_session(session_id)
@@ -296,6 +397,12 @@ class CardioTwinAPI:
             "signal_confidence": result.signal_confidence,
             "safety": safety_info,
             "alert_caregiver": alert_caregiver,
+            "action_summary": self._build_action_summary(
+                zone=zone,
+                signal_quality=result.signal_quality,
+                signal_confidence=result.signal_confidence,
+                safety_info=safety_info,
+            ),
             "disclaimer": DISCLAIMERS["not_diagnostic"],
         }
 
