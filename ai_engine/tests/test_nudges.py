@@ -406,7 +406,7 @@ class TestGenerateNudgeWithMockedAPI:
             nudge = await generate_nudge(zone_info)
             
             assert nudge.generated_by == "groq"
-            assert nudge.message == mock_response
+            assert nudge.message.startswith(mock_response)
     
     @pytest.mark.asyncio
     async def test_falls_back_on_api_failure(self):

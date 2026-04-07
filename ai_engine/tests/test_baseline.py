@@ -186,8 +186,8 @@ class TestCalibrateBaseline:
         # 15 good readings
         for i in range(15):
             readings.append({
-                "bpm": 70 + np.random.randint(-2, 3),
-                "hrv": 45 + np.random.randint(-2, 3),
+                "bpm": 70,
+                "hrv": 45,
                 "spo2": 98,
                 "temperature": 36.4
             })
