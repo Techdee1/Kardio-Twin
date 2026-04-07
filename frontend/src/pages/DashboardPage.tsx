@@ -5,7 +5,7 @@ import Sidebar from '../components/dashboard/Sidebar';
 import NudgePanel from '../components/dashboard/NudgePanel';
 import ProjectionPanel from '../components/dashboard/ProjectionPanel';
 import HistoryChart from '../components/dashboard/HistoryChart';
-import ManualInputPanel from '../components/dashboard/ManualInputPanel';
+import ManualInputPanel, { type ManualSubmittedVitals } from '../components/dashboard/ManualInputPanel';
 import { api } from '../services/api';
 import type { ActionSummary, NudgeResponse, ScoreResponse } from '../services/api';
 import { Canvas } from '@react-three/fiber';
@@ -56,6 +56,19 @@ function getActionSummaryFromResponse(response: Partial<ScoreResponse>): ActionS
             ...DEFAULT_ACTION_SUMMARY,
             ...response.action_summary,
             drivers: response.action_summary.drivers || [],
+        };
+    }
+
+    if (response.status === 'calibrating') {
+        return {
+            ...DEFAULT_ACTION_SUMMARY,
+            status: 'Calibrating',
+            why: 'Building baseline from recent manual readings.',
+            next_step: 'Submit another reading to continue calibration.',
+            advice_strength: 'calibration',
+            confidence_level: 'low',
+            signal_quality: response.signal_quality || 'unknown',
+            signal_confidence: response.signal_confidence || 0,
         };
     }
 
@@ -163,6 +176,33 @@ export default function DashboardPage() {
 
     const [calibration, setCalibration] = useState<{ active: boolean, progress: number }>({ active: true, progress: 0 });
     const [actionSummary, setActionSummary] = useState<ActionSummary>(DEFAULT_ACTION_SUMMARY);
+
+    const applyProvisionalManualVitals = useCallback((submittedVitals: ManualSubmittedVitals) => {
+        setLiveVitals(prev => ({
+            ...prev,
+            heartRate: Math.round(submittedVitals.bpm),
+            hrv: Math.round(submittedVitals.hrv),
+            spO2: Math.round(submittedVitals.spo2),
+            skinTemp: submittedVitals.temperature,
+            trend: 'Manual update pending score',
+        }));
+    }, []);
+
+    useEffect(() => {
+        if (selectedMode !== 'manual') {
+            return;
+        }
+
+        setLiveVitals(defaultVitals);
+        setCalibration({ active: true, progress: 0 });
+        setActionSummary({
+            ...DEFAULT_ACTION_SUMMARY,
+            status: 'Manual mode',
+            why: 'Enter a manual reading to update the monitor.',
+            next_step: 'Submit a manual reading below.',
+            advice_strength: 'calibration',
+        });
+    }, [selectedMode]);
 
     // Handle reading response from sensor simulator
     const handleReadingResponse = useCallback((_reading: any, response: any) => {
@@ -571,8 +611,9 @@ export default function DashboardPage() {
 
                     {activeView === 'manual' && sessionId && (
                         <div className="max-w-lg mx-auto py-4 sm:py-8">
-                            <ManualInputPanel sessionId={sessionId} onReadingSubmitted={(result) => {
+                            <ManualInputPanel sessionId={sessionId} onReadingSubmitted={(result, submittedVitals) => {
                                 requestSourceSwitch(result?.source || 'manual');
+                                applyProvisionalManualVitals(submittedVitals);
 
                                 if (result.status === 'calibrating') {
                                     setCalibration({

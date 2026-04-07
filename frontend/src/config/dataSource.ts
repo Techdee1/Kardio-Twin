@@ -34,7 +34,7 @@ function parseBooleanFlag(value: unknown, defaultValue: boolean): boolean {
 export function getModeDefaults(mode: DataSourceMode) {
     return {
         enableSimulator: mode === 'simulator',
-        enableScorePolling: mode === 'hardware' || mode === 'hybrid',
+        enableScorePolling: mode === 'hardware' || mode === 'hybrid' || mode === 'manual',
         enableManualEntry: mode === 'manual' || mode === 'hybrid',
     } as const;
 }

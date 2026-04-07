@@ -3,9 +3,16 @@ import { ClipboardPen, Send, CheckCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { useLanguage } from '../../i18n/LanguageContext';
 
+export interface ManualSubmittedVitals {
+    bpm: number;
+    hrv: number;
+    spo2: number;
+    temperature: number;
+}
+
 interface ManualInputPanelProps {
     sessionId: string;
-    onReadingSubmitted?: (result: any) => void;
+    onReadingSubmitted?: (result: any, submittedVitals: ManualSubmittedVitals) => void;
 }
 
 export default function ManualInputPanel({ sessionId, onReadingSubmitted }: ManualInputPanelProps) {
@@ -30,17 +37,24 @@ export default function ManualInputPanel({ sessionId, onReadingSubmitted }: Manu
         setSuccess(false);
 
         try {
+            const submittedVitals: ManualSubmittedVitals = {
+                bpm: parseFloat(bpm),
+                hrv: hrv ? parseFloat(hrv) : 50,
+                spo2: spo2 ? parseFloat(spo2) : 97,
+                temperature: temp ? parseFloat(temp) : 36.6,
+            };
+
             const result = await api.submitManualReading({
                 session_id: sessionId,
-                bpm: parseFloat(bpm),
-                hrv: hrv ? parseFloat(hrv) : undefined,
-                spo2: spo2 ? parseFloat(spo2) : undefined,
-                temperature: temp ? parseFloat(temp) : undefined,
+                bpm: submittedVitals.bpm,
+                hrv: submittedVitals.hrv,
+                spo2: submittedVitals.spo2,
+                temperature: submittedVitals.temperature,
                 systolic_bp: systolic ? parseFloat(systolic) : undefined,
                 diastolic_bp: diastolic ? parseFloat(diastolic) : undefined,
             });
             setSuccess(true);
-            onReadingSubmitted?.(result);
+            onReadingSubmitted?.(result, submittedVitals);
             // Reset after a moment
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
