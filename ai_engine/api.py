@@ -101,6 +101,7 @@ class ActionSummary:
     why: str
     next_step: str
     if_symptoms: str
+    advice_strength: str
     confidence_level: str
     signal_quality: str
     signal_confidence: float
@@ -137,6 +138,8 @@ class CardioTwinAPI:
     }
 
     DEFAULT_IF_SYMPTOMS = "If chest pain or shortness of breath occurs, seek help now."
+
+    CAUTIOUS_NEXT_STEP = "Confidence is limited. Please stay still, rest briefly, and retake reading before acting on this result."
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
@@ -181,12 +184,13 @@ class CardioTwinAPI:
         safety_confidence = safety_info.get("confidence")
         confidence_level = self._confidence_bucket(signal_confidence, safety_confidence)
 
-        if retake_required:
+        if retake_required or confidence_level == "low":
             summary = ActionSummary(
                 status="Retake needed",
                 why=why or "Signal quality is too low to provide a reliable interpretation.",
                 next_step=next_step or "Ensure proper sensor contact, stay still, and retake now.",
                 if_symptoms=self.DEFAULT_IF_SYMPTOMS,
+                advice_strength="retake_only",
                 confidence_level="low",
                 signal_quality=signal_quality,
                 signal_confidence=round(signal_confidence, 2),
@@ -203,11 +207,26 @@ class CardioTwinAPI:
             return asdict(summary)
 
         resolved_zone = zone or Zone.YELLOW
+
+        resolved_why = why or "Based on your latest vitals and trend."
+        resolved_next_step = (
+            next_step
+            or safety_info.get("safe_next_step")
+            or self.DEFAULT_NEXT_STEPS.get(resolved_zone, "Retake reading in a few minutes.")
+        )
+        advice_strength = "full"
+
+        if confidence_level == "medium":
+            resolved_why = f"Preliminary insight: {resolved_why}"
+            resolved_next_step = self.CAUTIOUS_NEXT_STEP
+            advice_strength = "cautious"
+
         summary = ActionSummary(
             status=self.ZONE_STATUS.get(resolved_zone, "Monitor"),
-            why=why or "Based on your latest vitals and trend.",
-            next_step=next_step or safety_info.get("safe_next_step") or self.DEFAULT_NEXT_STEPS.get(resolved_zone, "Retake reading in a few minutes."),
+            why=resolved_why,
+            next_step=resolved_next_step,
             if_symptoms=safety_info.get("seek_help_message") or self.DEFAULT_IF_SYMPTOMS,
+            advice_strength=advice_strength,
             confidence_level=confidence_level,
             signal_quality=signal_quality,
             signal_confidence=round(signal_confidence, 2),
