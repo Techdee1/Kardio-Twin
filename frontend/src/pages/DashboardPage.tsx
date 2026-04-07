@@ -7,7 +7,7 @@ import ProjectionPanel from '../components/dashboard/ProjectionPanel';
 import HistoryChart from '../components/dashboard/HistoryChart';
 import ManualInputPanel from '../components/dashboard/ManualInputPanel';
 import { api } from '../services/api';
-import type { NudgeResponse } from '../services/api';
+import type { ActionSummary, NudgeResponse, ScoreResponse } from '../services/api';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import { HealthAvatar } from '../components/HealthAvatar';
@@ -37,6 +37,50 @@ function formatSourceLabel(source?: string): string {
 }
 
 const SOURCE_SWITCH_DEBOUNCE_MS = 1500;
+
+const DEFAULT_ACTION_SUMMARY: ActionSummary = {
+    status: 'Monitoring',
+    why: 'Waiting for enough data to provide guidance.',
+    next_step: 'Continue monitoring and submit a fresh reading.',
+    if_symptoms: 'If chest pain or shortness of breath occurs, seek help now.',
+    advice_strength: 'cautious',
+    confidence_level: 'low',
+    signal_quality: 'unknown',
+    signal_confidence: 0,
+    drivers: [],
+};
+
+function getActionSummaryFromResponse(response: Partial<ScoreResponse>): ActionSummary {
+    if (response.action_summary) {
+        return {
+            ...DEFAULT_ACTION_SUMMARY,
+            ...response.action_summary,
+            drivers: response.action_summary.drivers || [],
+        };
+    }
+
+    if (response.status === 'retake_requested') {
+        return {
+            ...DEFAULT_ACTION_SUMMARY,
+            status: 'Retake needed',
+            why: response.message || 'Reading quality is too low for reliable guidance.',
+            next_step: 'Ensure proper sensor contact, stay still, and retake now.',
+            advice_strength: 'retake_only',
+            confidence_level: 'low',
+            signal_quality: response.signal_quality || 'poor',
+            signal_confidence: response.signal_confidence || 0,
+            drivers: [
+                {
+                    code: 'signal_quality_low',
+                    label: 'Low signal quality',
+                    detail: 'The sensor reading confidence is low.',
+                },
+            ],
+        };
+    }
+
+    return DEFAULT_ACTION_SUMMARY;
+}
 
 export default function DashboardPage() {
     const [searchParams] = useSearchParams();
@@ -118,17 +162,24 @@ export default function DashboardPage() {
 
 
     const [calibration, setCalibration] = useState<{ active: boolean, progress: number }>({ active: true, progress: 0 });
+    const [actionSummary, setActionSummary] = useState<ActionSummary>(DEFAULT_ACTION_SUMMARY);
 
     // Handle reading response from sensor simulator
     const handleReadingResponse = useCallback((_reading: any, response: any) => {
         console.log('[Dashboard] handleReadingResponse called:', response);
         requestSourceSwitch(response?.source || 'simulator');
 
+        if (response.status === 'retake_requested') {
+            setActionSummary(getActionSummaryFromResponse(response));
+            return;
+        }
+
         if (response.status === 'calibrating') {
             setCalibration({
                 active: true,
                 progress: (response.readings_collected || 0) / (response.readings_needed || 15)
             });
+            setActionSummary(getActionSummaryFromResponse(response));
         } else if (response.status === 'scored' && response.components) {
             console.log('[Dashboard] Updating vitals with:', response.components);
             setCalibration({ active: false, progress: 1 });
@@ -140,6 +191,7 @@ export default function DashboardPage() {
                 score: Math.round(response.score),
                 trend: response.zone_label || 'Optimal'
             });
+            setActionSummary(getActionSummaryFromResponse(response));
         }
     }, [requestSourceSwitch]);
 
@@ -167,7 +219,7 @@ export default function DashboardPage() {
         const pollScore = async () => {
             try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const data: any = await api.getScore(sessionId);
+                const data: ScoreResponse = await api.getScore(sessionId);
 
                 if (data.status === 'calibrating') {
                     requestSourceSwitch(data.source || 'hardware');
@@ -175,6 +227,9 @@ export default function DashboardPage() {
                         active: true,
                         progress: (data.readings_collected || 0) / (data.readings_needed || 15)
                     });
+                    setActionSummary(getActionSummaryFromResponse(data));
+                } else if (data.status === 'retake_requested') {
+                    setActionSummary(getActionSummaryFromResponse(data));
                 } else if (data.status === 'scored') {
                     requestSourceSwitch(data.source || 'hardware');
                     setCalibration({ active: false, progress: 1 });
@@ -187,6 +242,7 @@ export default function DashboardPage() {
                         score: data.score !== undefined ? Math.round(data.score) : prev.score,
                         trend: data.zone_label || prev.trend || 'Optimal'
                     }));
+                    setActionSummary(getActionSummaryFromResponse(data));
                 }
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
@@ -201,6 +257,7 @@ export default function DashboardPage() {
                     score: 94,
                     trend: 'Thriving'
                 });
+                setActionSummary(DEFAULT_ACTION_SUMMARY);
             }
         };
 
@@ -322,15 +379,56 @@ export default function DashboardPage() {
                                             <span className="hidden sm:inline">{isLoadingNudge ? t('dash.loading') : t('dash.getAiAdvice')}</span>
                                             <span className="sm:hidden">{isLoadingNudge ? '...' : 'AI'}</span>
                                         </button>
-                                        <div className="text-right flex flex-col items-end">
+                                        <div className="text-right flex flex-col items-end bg-white rounded-xl border border-background-dark/10 px-3 py-2 shadow-sm min-w-[120px]">
                                             <span className="text-[10px] sm:text-xs uppercase font-bold text-background-dark/50 tracking-wider">{t('dash.healthScore')}</span>
-                                            <span className={`text-3xl sm:text-5xl font-black ${liveVitals.score >= 80 ? 'text-primary' : liveVitals.score >= 55 ? 'text-yellow-500' : liveVitals.score >= 30 ? 'text-orange-500' : 'text-rose-500'}`}>
+                                            <span className={`text-xl sm:text-2xl font-black ${liveVitals.score >= 80 ? 'text-primary' : liveVitals.score >= 55 ? 'text-yellow-500' : liveVitals.score >= 30 ? 'text-orange-500' : 'text-rose-500'}`}>
                                                 {liveVitals.score}
                                             </span>
                                         </div>
                                     </div>
                                 )}
                             </div>
+
+                            {!calibration.active && (
+                                <section className="bg-white rounded-2xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3">
+                                    <div className="lg:col-span-3">
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Status</p>
+                                        <p className="text-base sm:text-lg font-extrabold text-background-dark mt-1">{actionSummary.status}</p>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                                Confidence: {actionSummary.confidence_level}
+                                            </span>
+                                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                                Signal: {actionSummary.signal_quality}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="lg:col-span-4">
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Why</p>
+                                        <p className="text-sm text-background-dark/80 mt-1 font-medium">{actionSummary.why}</p>
+                                        <p className="text-[10px] text-background-dark/50 mt-2">Confidence score: {(actionSummary.signal_confidence * 100).toFixed(0)}%</p>
+                                    </div>
+                                    <div className="lg:col-span-3">
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Next step</p>
+                                        <p className="text-sm text-background-dark/80 mt-1 font-medium">{actionSummary.next_step}</p>
+                                        <p className="text-[10px] text-rose-600 mt-2 font-semibold">{actionSummary.if_symptoms}</p>
+                                    </div>
+                                    <div className="lg:col-span-2">
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Top drivers</p>
+                                        <div className="mt-1 space-y-2">
+                                            {(actionSummary.drivers || []).slice(0, 2).map((driver) => (
+                                                <div key={driver.code} className="rounded-xl border border-background-dark/10 bg-background-light/50 px-2.5 py-2">
+                                                    <p className="text-xs font-bold text-background-dark">{driver.label}</p>
+                                                    <p className="text-[10px] text-background-dark/60 mt-0.5">{driver.detail}</p>
+                                                </div>
+                                            ))}
+                                            {(!actionSummary.drivers || actionSummary.drivers.length === 0) && (
+                                                <p className="text-xs text-background-dark/60">No dominant drivers yet.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
 
                             <div className="flex-1 relative bg-white rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden flex items-center justify-center min-h-[350px] sm:min-h-[450px] md:min-h-[600px] w-full mt-2 sm:mt-4">
                                 {/* Clinical background */}
@@ -481,6 +579,12 @@ export default function DashboardPage() {
                                         active: true,
                                         progress: (result.readings_collected || 0) / (result.readings_needed || 5)
                                     });
+                                    setActionSummary(getActionSummaryFromResponse(result));
+                                    return;
+                                }
+
+                                if (result.status === 'retake_requested') {
+                                    setActionSummary(getActionSummaryFromResponse(result));
                                     return;
                                 }
 
@@ -494,6 +598,7 @@ export default function DashboardPage() {
                                         score: Math.round(result.score),
                                         trend: result.zone_label || 'Optimal',
                                     });
+                                    setActionSummary(getActionSummaryFromResponse(result));
                                     setActiveView('overview');
                                 }
                             }} />
