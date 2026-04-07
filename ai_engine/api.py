@@ -140,6 +140,26 @@ class CardioTwinAPI:
     DEFAULT_IF_SYMPTOMS = "If chest pain or shortness of breath occurs, seek help now."
 
     CAUTIOUS_NEXT_STEP = "Confidence is limited. Please stay still, rest briefly, and retake reading before acting on this result."
+
+    REASON_DRIVER_LABELS = {
+        "spo2_emergency": ("Critically low SpO2", "Blood oxygen is in a critical range."),
+        "spo2_critical": ("Low SpO2", "Blood oxygen is below a safe threshold."),
+        "spo2_warning": ("SpO2 lower than normal", "Blood oxygen is lower than expected."),
+        "hr_very_high": ("Very high heart rate", "Heart rate is significantly above normal."),
+        "hr_very_low": ("Very low heart rate", "Heart rate is significantly below normal."),
+        "hr_high": ("Elevated heart rate", "Heart rate is above your expected range."),
+        "temp_very_high": ("High temperature", "Temperature is in a high-risk range."),
+        "temp_very_low": ("Low temperature", "Temperature is in a low-risk range."),
+        "temp_high": ("Temperature elevated", "Temperature is above your expected range."),
+        "hrv_critically_low": ("Very low HRV", "HRV indicates a high physiological strain state."),
+    }
+
+    COMPONENT_LABELS = {
+        "heart_rate": "Heart rate strain",
+        "hrv": "Low HRV",
+        "spo2": "Low SpO2",
+        "temperature": "Temperature deviation",
+    }
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
@@ -176,6 +196,7 @@ class CardioTwinAPI:
         signal_quality: str,
         signal_confidence: float,
         safety_info: Optional[Dict[str, Any]] = None,
+        components: Optional[Dict[str, Dict[str, float]]] = None,
         why: Optional[str] = None,
         next_step: Optional[str] = None,
         retake_required: bool = False,
@@ -208,6 +229,53 @@ class CardioTwinAPI:
 
         resolved_zone = zone or Zone.YELLOW
 
+        driver_candidates: List[Dict[str, str]] = []
+
+        reason_drivers = safety_info.get("reason_drivers") or []
+        for reason_code in reason_drivers:
+            label, detail = self.REASON_DRIVER_LABELS.get(
+                reason_code,
+                ("Detected risk factor", reason_code.replace("_", " ")),
+            )
+            driver_candidates.append(
+                asdict(
+                    ActionDriver(
+                        code=reason_code,
+                        label=label,
+                        detail=detail,
+                    )
+                )
+            )
+
+        if components:
+            component_rank = sorted(
+                components.items(),
+                key=lambda item: item[1].get("score", 100),
+            )
+            for component_name, component_data in component_rank:
+                score_value = round(component_data.get("score", 0), 1)
+                reading_value = component_data.get("value", 0)
+                driver_candidates.append(
+                    asdict(
+                        ActionDriver(
+                            code=f"component_{component_name}",
+                            label=self.COMPONENT_LABELS.get(component_name, component_name.replace("_", " ").title()),
+                            detail=f"Current value {reading_value}, component score {score_value}/100.",
+                        )
+                    )
+                )
+
+        unique_drivers: List[Dict[str, str]] = []
+        seen_codes = set()
+        for candidate in driver_candidates:
+            code = candidate.get("code")
+            if not code or code in seen_codes:
+                continue
+            seen_codes.add(code)
+            unique_drivers.append(candidate)
+            if len(unique_drivers) == 2:
+                break
+
         resolved_why = why or "Based on your latest vitals and trend."
         resolved_next_step = (
             next_step
@@ -230,7 +298,7 @@ class CardioTwinAPI:
             confidence_level=confidence_level,
             signal_quality=signal_quality,
             signal_confidence=round(signal_confidence, 2),
-            drivers=[],
+            drivers=unique_drivers,
         )
         return asdict(summary)
     
@@ -421,6 +489,7 @@ class CardioTwinAPI:
                 signal_quality=result.signal_quality,
                 signal_confidence=result.signal_confidence,
                 safety_info=safety_info,
+                components=components,
             ),
             "disclaimer": DISCLAIMERS["not_diagnostic"],
         }
