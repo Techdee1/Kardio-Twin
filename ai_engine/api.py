@@ -189,6 +189,13 @@ class CardioTwinAPI:
             return "medium"
         return "low"
 
+    def _confidence_score_from_level(self, level: str) -> float:
+        if level == "high":
+            return 0.9
+        if level == "medium":
+            return 0.65
+        return 0.4
+
     def _build_action_summary(
         self,
         *,
@@ -512,11 +519,55 @@ class CardioTwinAPI:
                 "status": "calibrating",
                 "readings_collected": len(session.readings),
                 "readings_needed": session.calibration_readings_required,
+                "action_summary": {
+                    "status": "Calibrating",
+                    "why": "Building your baseline from initial readings.",
+                    "next_step": "Stay still and continue collecting readings.",
+                    "if_symptoms": self.DEFAULT_IF_SYMPTOMS,
+                    "advice_strength": "calibration",
+                    "confidence_level": "low",
+                    "signal_quality": "unknown",
+                    "signal_confidence": 0.0,
+                    "drivers": [],
+                },
             }
         
         score = self.engine.get_current_score(session_id)
         zone = self.engine.get_current_zone(session_id)
         zone_info = self.ZONE_INFO.get(zone, {"label": "Unknown", "emoji": "⚪"})
+
+        latest_reading = session.readings[-1] if session.readings else None
+        components = {
+            "heart_rate": {
+                "value": latest_reading.heart_rate if latest_reading else 0,
+                "score": session.current_scores.heart_rate,
+            },
+            "hrv": {
+                "value": latest_reading.hrv if latest_reading else 0,
+                "score": session.current_scores.hrv,
+            },
+            "spo2": {
+                "value": latest_reading.spo2 if latest_reading else 0,
+                "score": session.current_scores.spo2,
+            },
+            "temperature": {
+                "value": latest_reading.temperature if latest_reading else 0,
+                "score": session.current_scores.temperature,
+            },
+        }
+
+        baseline = session.baseline or {}
+        baseline_data = {
+            "resting_bpm": baseline.get("resting_bpm", 70),
+            "resting_hrv": baseline.get("resting_hrv", 50),
+            "normal_spo2": baseline.get("normal_spo2", 98),
+            "normal_temp": baseline.get("normal_temp", 36.5),
+        }
+
+        safety_info = session.current_safety.to_dict() if session.current_safety else None
+        confidence_level = (safety_info or {}).get("confidence", "medium")
+        signal_confidence = self._confidence_score_from_level(confidence_level)
+        signal_quality = "good" if signal_confidence >= 0.8 else "ok" if signal_confidence >= 0.5 else "poor"
         
         return {
             "status": "scored",
@@ -524,6 +575,18 @@ class CardioTwinAPI:
             "zone": zone.value.upper() if zone else "UNKNOWN",
             "zone_label": zone_info["label"],
             "zone_emoji": zone_info["emoji"],
+            "components": components,
+            "baseline": baseline_data,
+            "signal_quality": signal_quality,
+            "signal_confidence": signal_confidence,
+            "safety": safety_info,
+            "action_summary": self._build_action_summary(
+                zone=zone,
+                signal_quality=signal_quality,
+                signal_confidence=signal_confidence,
+                safety_info=safety_info,
+                components=components,
+            ),
         }
     
     def get_history(self, session_id: str) -> List[Dict[str, Any]]:
