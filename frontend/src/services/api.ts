@@ -20,13 +20,34 @@ export interface SafetyInfo {
     red_flags: string[];
     safe_next_step: string;
     seek_help_message?: string;
+    confidence?: 'low' | 'medium' | 'high';
+    reason_drivers?: string[];
+}
+
+export interface ActionDriver {
+    code: string;
+    label: string;
+    detail: string;
+}
+
+export interface ActionSummary {
+    status: string;
+    why: string;
+    next_step: string;
+    if_symptoms: string;
+    advice_strength: string;
+    confidence_level: 'low' | 'medium' | 'high' | string;
+    signal_quality: 'good' | 'ok' | 'poor' | 'unknown' | string;
+    signal_confidence: number;
+    drivers: ActionDriver[];
 }
 
 export interface ScoreResponse {
-    score: number;
-    zone: string;
-    zone_label: string;
-    zone_emoji: string;
+    status: 'calibrating' | 'retake_requested' | 'scored' | string;
+    score?: number;
+    zone?: string;
+    zone_label?: string;
+    zone_emoji?: string;
     alert?: boolean;
     nudge_sent?: boolean;
     source?: string;
@@ -34,7 +55,11 @@ export interface ScoreResponse {
     signal_confidence?: number;
     safety?: SafetyInfo;
     disclaimer?: string;
-    components: {
+    action_summary?: ActionSummary;
+    readings_collected?: number;
+    readings_needed?: number;
+    message?: string;
+    components?: {
         heart_rate: ComponentScore;
         hrv: ComponentScore;
         spo2: ComponentScore;
