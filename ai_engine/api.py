@@ -711,9 +711,12 @@ class CardioTwinAPI:
             prediction_source = "fallback_trend"
             best_case_score = min(100.0, projected_score + 5.0)
             worst_case_score = max(0.0, projected_score - 5.0)
+            projected_score_average = projected_score
         else:
-            # Use engine projection (average of projected scores)
-            projected_score = sum(projection.projected_scores) / len(projection.projected_scores)
+            # Use the projection value at the requested horizon.
+            horizon_index = max(0, min(len(projection.projected_scores) - 1, horizon_hours - 1))
+            projected_score = projection.projected_scores[horizon_index]
+            projected_score_average = sum(projection.projected_scores) / len(projection.projected_scores)
             confidence = projection.trend.confidence if hasattr(projection.trend, "confidence") else 0.7
             trend_direction = projection.trend.value if hasattr(projection.trend, "value") else str(projection.trend)
             best_case_score = projection.best_case_score
@@ -778,6 +781,7 @@ class CardioTwinAPI:
             "confidence": round(float(confidence), 2),
             "best_case_score": round(float(best_case_score), 1) if best_case_score is not None else None,
             "worst_case_score": round(float(worst_case_score), 1) if worst_case_score is not None else None,
+            "projected_score_average": round(float(projected_score_average), 1),
             "trend_direction": trend_direction,
             "disclaimer": "Statistical projection only. Not a medical diagnosis.",
         }
