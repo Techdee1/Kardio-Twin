@@ -8,7 +8,7 @@ export default function LandingPage() {
     const navigate = useNavigate();
     const [phone, setPhone] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showContacts, setShowContacts] = useState(false);
+    const [showContacts, setShowContacts] = useState(true);
     const [caregiverName, setCaregiverName] = useState('');
     const [caregiverPhone, setCaregiverPhone] = useState('');
     const [medName, setMedName] = useState('');
@@ -41,6 +41,19 @@ export default function LandingPage() {
             setIsLoading(false);
         }
     };
+
+    const renderEmergencyContacts = () => (
+        <div className="mt-3 space-y-3 bg-background-light/50 border border-primary/10 rounded-xl p-4">
+            <p className="text-[11px] text-background-dark/60 font-medium">{t('caregiver.subtitle')}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input type="text" placeholder={t('caregiver.name')} value={caregiverName} onChange={e => setCaregiverName(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <input type="tel" placeholder={t('caregiver.phone')} value={caregiverPhone} onChange={e => setCaregiverPhone(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <input type="text" placeholder={t('caregiver.medName')} value={medName} onChange={e => setMedName(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <input type="tel" placeholder={t('caregiver.medPhone')} value={medPhone} onChange={e => setMedPhone(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+        </div>
+    );
+
     return (
         <>
             <main className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-32 lg:pb-40 bg-white">
@@ -94,17 +107,7 @@ export default function LandingPage() {
                                 >
                                     {showContacts ? '▾' : '▸'} {t('caregiver.title')}
                                 </button>
-                                {showContacts && (
-                                    <div className="mt-3 space-y-3 bg-background-light/50 border border-primary/10 rounded-xl p-4">
-                                        <p className="text-[11px] text-background-dark/60 font-medium">{t('caregiver.subtitle')}</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <input type="text" placeholder={t('caregiver.name')} value={caregiverName} onChange={e => setCaregiverName(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                                            <input type="tel" placeholder={t('caregiver.phone')} value={caregiverPhone} onChange={e => setCaregiverPhone(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                                            <input type="text" placeholder={t('caregiver.medName')} value={medName} onChange={e => setMedName(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                                            <input type="tel" placeholder={t('caregiver.medPhone')} value={medPhone} onChange={e => setMedPhone(e.target.value)} className="px-3 py-2 rounded-lg bg-white border border-primary/15 text-sm font-medium text-background-dark placeholder:text-background-dark/40 focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                                        </div>
-                                    </div>
-                                )}
+                                  {showContacts && renderEmergencyContacts()}
                             </div>
 
                             <div className="flex items-center gap-4 text-xs text-background-dark/60 font-medium">
@@ -310,6 +313,15 @@ export default function LandingPage() {
                                     {isLoading ? t('hero.starting') : t('hero.startScreening')}
                                 </button>
                             </div>
+                              <div className="w-full max-w-lg text-left">
+                                  <button
+                                      onClick={() => setShowContacts(!showContacts)}
+                                      className="text-xs font-semibold text-primary/80 hover:text-primary transition-colors cursor-pointer"
+                                  >
+                                      {showContacts ? '▾' : '▸'} {t('caregiver.title')}
+                                  </button>
+                                  {showContacts && renderEmergencyContacts()}
+                              </div>
                             <p className="text-xs text-background-dark/50 font-medium">
                                 {t('cta.terms')} <a href="#" className="underline hover:text-primary transition-colors">{t('cta.termsLink')}</a> {t('cta.and')} <a href="#" className="underline hover:text-primary transition-colors">{t('cta.privacyLink')}</a>.
                             </p>
