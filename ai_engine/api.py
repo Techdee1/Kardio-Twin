@@ -661,13 +661,43 @@ class CardioTwinAPI:
                     zone = z_entry
             
             zone_info = self.ZONE_INFO.get(zone, {"label": "Unknown", "emoji": "⚪"})
+
+            reading = session.readings[i] if i < len(session.readings) else None
+
+            heart_rate_value = reading.heart_rate if reading else 0
+            hrv_value = reading.hrv if reading else 0
+            spo2_value = reading.spo2 if reading else 0
+            temperature_value = reading.temperature if reading else 0
+
+            if not timestamp and reading is not None:
+                timestamp = reading.timestamp.isoformat()
+            if not timestamp:
+                timestamp = datetime.now().isoformat()
             
             history.append({
                 "index": i,
                 "score": round(score, 1),
                 "zone": zone.value.upper(),
                 "zone_label": zone_info["label"],
-                "timestamp": i * 2000,  # 2 seconds per reading (approx)
+                "timestamp": timestamp,
+                "components": {
+                    "heart_rate": {
+                        "value": heart_rate_value,
+                        "score": round(scores_data.get("heart_rate", 0), 1) if isinstance(entry, dict) else 0,
+                    },
+                    "hrv": {
+                        "value": hrv_value,
+                        "score": round(scores_data.get("hrv", 0), 1) if isinstance(entry, dict) else 0,
+                    },
+                    "spo2": {
+                        "value": spo2_value,
+                        "score": round(scores_data.get("spo2", 0), 1) if isinstance(entry, dict) else 0,
+                    },
+                    "temperature": {
+                        "value": temperature_value,
+                        "score": round(scores_data.get("temperature", 0), 1) if isinstance(entry, dict) else 0,
+                    },
+                },
             })
         
         return history

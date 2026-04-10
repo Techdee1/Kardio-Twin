@@ -185,15 +185,24 @@ def get_all_scores(session_id: str, db):
     if len(readings) < CALIBRATION_THRESHOLD:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Still calibrating. {len(readings)}/{CALIBRATION_THRESHOLD} readings collected.")
 
-    return [
-        {
-            "timestamp": r.timestamp,
-            "bpm": r.bpm,
-            "hrv": r.hrv,
-            "spo2": r.spo2,
-            "temperature": r.temperature
-        }
-        for r in readings
-    ]
+    response = []
+    for r in readings:
+        score = r.score if r.score is not None else 75.0
+        zone, zone_label, _zone_emoji = get_zone_info(score)
+
+        response.append({
+            "timestamp": r.created_at.isoformat() if getattr(r, "created_at", None) else str(r.timestamp),
+            "score": round(score, 1),
+            "zone": (r.zone or zone),
+            "zone_label": zone_label,
+            "components": {
+                "heart_rate": {"value": r.bpm, "score": 0.0},
+                "hrv": {"value": r.hrv, "score": 0.0},
+                "spo2": {"value": r.spo2, "score": 0.0},
+                "temperature": {"value": r.temperature, "score": 0.0},
+            },
+        })
+
+    return response
 
 
