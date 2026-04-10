@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check } from 'lucide-react';
+import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check, Heart, Zap, Droplets, Thermometer } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import NudgePanel from '../components/dashboard/NudgePanel';
@@ -389,199 +389,224 @@ export default function DashboardPage() {
             <div className="flex flex-1 overflow-hidden">
                 <Sidebar activeView={activeView} setActiveView={setActiveView} />
 
-                <main className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8">
+                <main className={`flex-1 p-3 sm:p-4 md:p-6 ${activeView === 'overview' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                     {activeView === 'overview' && (
-                        <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto flex flex-col min-h-[calc(100vh-8rem)] pb-8">
-                            <div className="flex flex-col sm:flex-row sm:items-end justify-between shrink-0 mb-2 gap-3">
-                                <div>
-                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold flex flex-wrap items-center gap-2 sm:gap-3 tracking-tight">
+                        <div className="h-full flex flex-col gap-2 sm:gap-3 max-w-6xl mx-auto overflow-hidden">
+                            <div className="shrink-0 flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <h2 className="text-base sm:text-xl font-extrabold flex items-center gap-2 tracking-tight">
                                         CardioTwin <span className="italic font-serif text-primary font-normal">{t('dash.digitalTwin')}</span>
                                         {calibration.active ? (
-                                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-orange-100 text-orange-600 border border-orange-200 shadow-sm animate-pulse">
+                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-orange-100 text-orange-600 border border-orange-200 animate-pulse">
                                                 {t('dash.calibrating')}
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-600 border border-emerald-200 shadow-sm">
+                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-600 border border-emerald-200">
                                                 {t('dash.liveMonitoring')}
                                             </span>
                                         )}
                                     </h2>
-                                    <p className="text-background-dark/60 mt-1 font-medium text-xs sm:text-sm truncate max-w-[280px] sm:max-w-none">{t('dash.session')}: {sessionId} • {t('dash.realtimeSync')}</p>
+                                    <p className="text-background-dark/50 font-medium text-[10px] sm:text-xs truncate">{t('dash.session')}: {sessionId}</p>
                                 </div>
                                 {!calibration.active && (
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <button
-                                            onClick={fetchNudge}
-                                            disabled={isLoadingNudge}
-                                            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs sm:text-sm font-bold transition-all border border-primary/20 hover:border-primary/30 cursor-pointer disabled:opacity-50 shadow-sm hover:shadow-md"
-                                        >
-                                            <Sparkles className={`w-4 h-4 ${isLoadingNudge ? 'animate-spin' : ''}`} />
-                                            <span className="hidden sm:inline">{isLoadingNudge ? t('dash.loading') : t('dash.getAiAdvice')}</span>
-                                            <span className="sm:hidden">{isLoadingNudge ? '...' : 'AI'}</span>
-                                        </button>
-                                        <div className="text-right flex flex-col items-end bg-white rounded-xl border border-background-dark/10 px-3 py-2 shadow-sm min-w-[120px]">
-                                            <span className="text-[10px] sm:text-xs uppercase font-bold text-background-dark/50 tracking-wider">{t('dash.healthScore')}</span>
-                                            <span className={`text-xl sm:text-2xl font-black ${liveVitals.score >= 80 ? 'text-primary' : liveVitals.score >= 55 ? 'text-yellow-500' : liveVitals.score >= 30 ? 'text-orange-500' : 'text-rose-500'}`}>
-                                                {liveVitals.score}
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <button
+                                        onClick={fetchNudge}
+                                        disabled={isLoadingNudge}
+                                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all border border-primary/20 hover:border-primary/30 cursor-pointer disabled:opacity-50 shadow-sm"
+                                    >
+                                        <Sparkles className={`w-3.5 h-3.5 ${isLoadingNudge ? 'animate-spin' : ''}`} />
+                                        <span className="hidden sm:inline">{isLoadingNudge ? t('dash.loading') : t('dash.getAiAdvice')}</span>
+                                        <span className="sm:hidden">{isLoadingNudge ? '…' : 'AI'}</span>
+                                    </button>
                                 )}
                             </div>
 
-                            {!calibration.active && (
-                                <section className="bg-white rounded-2xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3">
-                                    <div className="lg:col-span-3">
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Status</p>
-                                        <p className="text-base sm:text-lg font-extrabold text-background-dark mt-1">{actionSummary.status}</p>
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                                Confidence: {actionSummary.confidence_level}
-                                            </span>
-                                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                                Signal: {actionSummary.signal_quality}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="lg:col-span-4">
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Why</p>
-                                        <p className="text-sm text-background-dark/80 mt-1 font-medium">{actionSummary.why}</p>
-                                        <p className="text-[10px] text-background-dark/50 mt-2">Confidence score: {(actionSummary.signal_confidence * 100).toFixed(0)}%</p>
-                                    </div>
-                                    <div className="lg:col-span-3">
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Next step</p>
-                                        <p className="text-sm text-background-dark/80 mt-1 font-medium">{actionSummary.next_step}</p>
-                                        <p className="text-[10px] text-rose-600 mt-2 font-semibold">{actionSummary.if_symptoms}</p>
-                                    </div>
-                                    <div className="lg:col-span-2">
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-background-dark/40">Top drivers</p>
-                                        <div className="mt-1 space-y-2">
-                                            {(actionSummary.drivers || []).slice(0, 2).map((driver) => (
-                                                <div key={driver.code} className="rounded-xl border border-background-dark/10 bg-background-light/50 px-2.5 py-2">
-                                                    <p className="text-xs font-bold text-background-dark">{driver.label}</p>
-                                                    <p className="text-[10px] text-background-dark/60 mt-0.5">{driver.detail}</p>
-                                                </div>
-                                            ))}
-                                            {(!actionSummary.drivers || actionSummary.drivers.length === 0) && (
-                                                <p className="text-xs text-background-dark/60">No dominant drivers yet.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
-
-                            <div className="flex-1 relative bg-white rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden flex items-center justify-center min-h-[350px] sm:min-h-[450px] md:min-h-[600px] w-full mt-2 sm:mt-4">
-                                {/* Clinical background */}
-                                <div className="absolute inset-0 bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_48%,#f9fcff_100%)] pointer-events-none"></div>
-                                <div className="absolute inset-0 opacity-40 pointer-events-none bg-[linear-gradient(to_right,rgba(56,189,248,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,189,248,0.12)_1px,transparent_1px)] bg-[size:28px_28px]"></div>
-                                <div className="absolute -top-16 -left-16 w-[260px] sm:w-[360px] h-[260px] sm:h-[360px] bg-cyan-200/35 blur-[90px] rounded-full pointer-events-none"></div>
-                                <div className="absolute -bottom-20 -right-10 w-[260px] sm:w-[340px] h-[260px] sm:h-[340px] bg-emerald-200/25 blur-[95px] rounded-full pointer-events-none"></div>
-
+                            <div className="flex-1 min-h-0 relative bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden">
                                 {calibration.active ? (
-                                    <div className="relative z-10 flex flex-col items-center max-w-md w-full p-5 sm:p-8 mx-3 text-center bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-primary/20 shadow-xl">
-                                        <Activity className="w-10 h-10 sm:w-12 sm:h-12 text-primary animate-bounce mb-4 sm:mb-6" />
-                                        <h3 className="text-xl sm:text-2xl font-bold text-background-dark mb-2">{t('dash.analyzingBaseline')}</h3>
-                                        <p className="text-background-dark/60 mb-6 sm:mb-8 font-medium text-sm sm:text-base">{t('dash.gatheringSensor')}</p>
-
-                                        <div className="w-full h-3 bg-background-light rounded-full overflow-hidden border border-background-dark/10">
-                                            <div
-                                                className="h-full bg-primary transition-all duration-500 rounded-full bg-[length:2rem_2rem] bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] animate-[progress-stripes_1s_linear_infinite]"
-                                                style={{ width: `${Math.min(100, Math.max(5, calibration.progress * 100))}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="flex justify-between w-full mt-3 text-xs font-bold text-background-dark/50 uppercase tracking-widest">
-                                            <span>{t('dash.initializing')}</span>
-                                            <span>{Math.min(100, Math.round(calibration.progress * 100))}%</span>
+                                    /* ── Calibration State ── */
+                                    <div className="absolute inset-0 bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_48%,#f9fcff_100%)] flex items-center justify-center">
+                                        <div className="flex flex-col items-center max-w-sm w-full p-6 sm:p-8 mx-4 text-center bg-white/90 backdrop-blur-md rounded-2xl border border-primary/20 shadow-xl">
+                                            <Activity className="w-10 h-10 text-primary animate-bounce mb-4" />
+                                            <h3 className="text-xl sm:text-2xl font-bold text-background-dark mb-2">{t('dash.analyzingBaseline')}</h3>
+                                            <p className="text-background-dark/60 mb-6 font-medium text-sm">{t('dash.gatheringSensor')}</p>
+                                            <div className="w-full h-2.5 bg-background-light rounded-full overflow-hidden border border-background-dark/10">
+                                                <div
+                                                    className="h-full bg-primary transition-all duration-500 rounded-full"
+                                                    style={{ width: `${Math.min(100, Math.max(5, calibration.progress * 100))}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between w-full mt-2 text-[10px] font-bold text-background-dark/50 uppercase tracking-widest">
+                                                <span>{t('dash.initializing')}</span>
+                                                <span>{Math.min(100, Math.round(calibration.progress * 100))}%</span>
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col md:flex-row gap-4 w-full h-full min-h-[350px] sm:min-h-[450px] md:min-h-[600px]">
-                                        {/* 3D Body Render — shifts left when panel is open */}
-                                        <div className={`relative h-full min-h-[350px] sm:min-h-[450px] md:min-h-[700px] flex items-center justify-center z-10 transition-all duration-500 ease-in-out ${showNudge ? 'md:flex-[3]' : 'flex-1'}`}>
-                                            <div className="absolute inset-x-0 top-0 bottom-[92px] sm:bottom-[124px] rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-auto">
-                                                <Canvas
-                                                    shadows
-                                                    camera={{ position: [0, 1.45, 7.6], fov: 37 }}
-                                                    dpr={[1, 2]}
-                                                    performance={{ min: 0.5 }}
-                                                >
-                                                    <Suspense fallback={
-                                                        <mesh>
-                                                            <boxGeometry args={[1, 2, 0.5]} />
-                                                            <meshStandardMaterial color="#e5e7eb" wireframe />
-                                                        </mesh>
-                                                    }>
-                                                        <ambientLight intensity={0.6} />
-                                                        <spotLight position={[5, 5, 5]} intensity={1.5} angle={0.5} penumbra={1} castShadow />
-                                                        <Environment preset="city" />
+                                    /* ── Scored State: Avatar + Wellness Panel side-by-side ── */
+                                    <div className="flex flex-col md:flex-row h-full">
 
-                                                        <HealthAvatar score={liveVitals.score} vitals={liveVitals} />
+                                        {/* ── Left: 3D Avatar ── */}
+                                        <div className="relative h-[240px] sm:h-[280px] md:h-full md:flex-[5] shrink-0 md:shrink bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_50%,#f0f9ff_100%)] overflow-hidden">
+                                            {/* Ambient blobs */}
+                                            <div className="absolute inset-0 opacity-40 pointer-events-none bg-[linear-gradient(to_right,rgba(56,189,248,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,189,248,0.1)_1px,transparent_1px)] bg-[size:28px_28px]" />
+                                            <div className="absolute -top-10 -left-10 w-48 h-48 bg-cyan-200/40 blur-[60px] rounded-full pointer-events-none" />
+                                            <div className="absolute -bottom-10 -right-6 w-44 h-44 bg-emerald-200/30 blur-[60px] rounded-full pointer-events-none" />
 
-                                                        <OrbitControls
-                                                            enablePan={false}
-                                                            makeDefault
-                                                            target={[0, 1.25, 0]}
-                                                            minPolarAngle={Math.PI / 6}
-                                                            maxPolarAngle={Math.PI / 1.5}
-                                                            minDistance={5.9}
-                                                            maxDistance={10}
-                                                            zoomSpeed={1.5}
-                                                        />
-                                                    </Suspense>
-                                                </Canvas>
-                                            </div>
+                                            {/* Three.js canvas fills the parent */}
+                                            <Canvas
+                                                shadows
+                                                camera={{ position: [0, 1.45, 7.6], fov: 37 }}
+                                                dpr={[1, 2]}
+                                                performance={{ min: 0.5 }}
+                                                style={{ width: '100%', height: '100%' }}
+                                            >
+                                                <Suspense fallback={
+                                                    <mesh>
+                                                        <boxGeometry args={[1, 2, 0.5]} />
+                                                        <meshStandardMaterial color="#e5e7eb" wireframe />
+                                                    </mesh>
+                                                }>
+                                                    <ambientLight intensity={0.6} />
+                                                    <spotLight position={[5, 5, 5]} intensity={1.5} angle={0.5} penumbra={1} castShadow />
+                                                    <Environment preset="city" />
+                                                    <HealthAvatar score={liveVitals.score} vitals={liveVitals} />
+                                                    <OrbitControls
+                                                        enablePan={false}
+                                                        makeDefault
+                                                        target={[0, 1.25, 0]}
+                                                        minPolarAngle={Math.PI / 6}
+                                                        maxPolarAngle={Math.PI / 1.5}
+                                                        minDistance={5.9}
+                                                        maxDistance={10}
+                                                        zoomSpeed={1.5}
+                                                    />
+                                                </Suspense>
+                                            </Canvas>
 
-                                            {/* Bottom Floating Info Panel */}
-                                            <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 w-[94%] sm:w-[90%] max-w-2xl bg-white/90 backdrop-blur-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-primary/20 flex items-center justify-between z-20">
-                                                <div className="flex items-center gap-2 sm:gap-4">
-                                                    <div className="p-2 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl border border-primary/20">
-                                                        <BrainCircuit className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-xs sm:text-sm font-bold text-background-dark mb-0.5">{t('dash.analysisStatus')}</h4>
-                                                        <p className="text-[10px] sm:text-xs text-background-dark/60 font-medium max-w-[150px] sm:max-w-md">
-                                                            {liveVitals.score >= 80
-                                                                ? t('dash.statusOptimal')
-                                                                : liveVitals.score >= 55
-                                                                    ? t('dash.statusMild')
-                                                                    : t('dash.statusWarning')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right pl-2 sm:pl-4 border-l border-background-dark/10">
-                                                    <span className="text-[10px] font-bold text-background-dark/40 uppercase tracking-widest block mb-1 sm:mb-1.5 w-max">{t('dash.activeZone')}</span>
-                                                    <span className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border whitespace-nowrap ${liveVitals.score >= 80 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : liveVitals.score >= 55 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : liveVitals.score >= 30 ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>
-                                                        {liveVitals.trend || "Thriving"}
-                                                    </span>
-                                                </div>
+                                            {/* Zone badge pinned to bottom of avatar */}
+                                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-primary/20 shadow-md pointer-events-none">
+                                                <BrainCircuit className="w-3.5 h-3.5 text-primary" />
+                                                <span className={`text-xs font-bold ${liveVitals.score >= 80 ? 'text-emerald-700' : liveVitals.score >= 55 ? 'text-yellow-700' : liveVitals.score >= 30 ? 'text-orange-700' : 'text-rose-700'}`}>
+                                                    {liveVitals.trend || 'Thriving'}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        {/* AI Advice Panel — overlay on mobile, side panel on desktop */}
-                                        {showNudge && nudge && (
-                                            <>
-                                                {/* Mobile: full-screen overlay */}
-                                                <div className="md:hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 pb-20" onClick={() => setShowNudge(false)}>
-                                                    <div className="w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                                                        <NudgePanel
-                                                            nudge={nudge}
-                                                            isLoading={isLoadingNudge}
-                                                            onRefresh={fetchNudge}
-                                                            onClose={() => setShowNudge(false)}
-                                                        />
+                                        {/* ── Right: Wellness Panel ── */}
+                                        <div className="md:flex-[3] flex flex-col gap-2.5 p-3 sm:p-4 overflow-y-auto border-t md:border-t-0 md:border-l border-primary/10 min-w-0 bg-white">
+
+                                            {/* Score + zone chip */}
+                                            <div className={`rounded-xl border p-3 flex items-center justify-between ${liveVitals.score >= 80 ? 'bg-emerald-50 border-emerald-200' : liveVitals.score >= 55 ? 'bg-amber-50 border-amber-200' : liveVitals.score >= 30 ? 'bg-orange-50 border-orange-200' : 'bg-rose-50 border-rose-200'}`}>
+                                                <div>
+                                                    <p className="text-[9px] uppercase tracking-widest font-bold text-background-dark/50">{t('dash.healthScore')}</p>
+                                                    <p className={`text-3xl sm:text-4xl font-black leading-none mt-0.5 ${liveVitals.score >= 80 ? 'text-emerald-600' : liveVitals.score >= 55 ? 'text-amber-600' : liveVitals.score >= 30 ? 'text-orange-600' : 'text-rose-600'}`}>
+                                                        {liveVitals.score}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className={`inline-block text-[9px] uppercase font-black px-2.5 py-1 rounded-full border ${liveVitals.score >= 80 ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : liveVitals.score >= 55 ? 'bg-amber-100 text-amber-700 border-amber-300' : liveVitals.score >= 30 ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-rose-100 text-rose-700 border-rose-300'}`}>
+                                                        {liveVitals.score >= 80 ? 'GREEN' : liveVitals.score >= 55 ? 'YELLOW' : liveVitals.score >= 30 ? 'ORANGE' : 'RED'}
+                                                    </span>
+                                                    <p className="text-[11px] font-semibold text-background-dark/60 mt-1">{liveVitals.trend || 'Thriving'}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Action summary card */}
+                                            <div className="rounded-xl border border-background-dark/8 bg-background-light/60 p-3 space-y-2">
+                                                {/* Status row */}
+                                                <div>
+                                                    <p className="text-[9px] uppercase tracking-widest font-bold text-background-dark/40">Status</p>
+                                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                        <p className="text-sm font-extrabold text-background-dark">{actionSummary.status}</p>
+                                                        <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">{actionSummary.confidence_level}</span>
+                                                        <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">sig: {actionSummary.signal_quality}</span>
                                                     </div>
                                                 </div>
-                                                {/* Desktop: side panel */}
-                                                <div className="hidden md:block flex-[2] min-w-[280px] max-w-[380px] transition-all duration-500 ease-in-out">
-                                                    <NudgePanel
-                                                        nudge={nudge}
-                                                        isLoading={isLoadingNudge}
-                                                        onRefresh={fetchNudge}
-                                                        onClose={() => setShowNudge(false)}
-                                                    />
+
+                                                <div className="h-px bg-background-dark/8" />
+
+                                                {/* Why */}
+                                                <div>
+                                                    <p className="text-[9px] uppercase tracking-widest font-bold text-background-dark/40">Why</p>
+                                                    <p className="text-xs text-background-dark/80 font-medium leading-relaxed mt-0.5">{actionSummary.why}</p>
                                                 </div>
-                                            </>
-                                        )}
+
+                                                {/* Next step */}
+                                                <div>
+                                                    <p className="text-[9px] uppercase tracking-widest font-bold text-background-dark/40">Next step</p>
+                                                    <p className="text-xs text-background-dark/80 font-medium leading-relaxed mt-0.5">{actionSummary.next_step}</p>
+                                                    {actionSummary.if_symptoms && (
+                                                        <p className="text-[10px] text-rose-600 mt-1 font-semibold leading-snug">{actionSummary.if_symptoms}</p>
+                                                    )}
+                                                </div>
+
+                                                {/* Top drivers */}
+                                                {actionSummary.drivers && actionSummary.drivers.length > 0 && (
+                                                    <>
+                                                        <div className="h-px bg-background-dark/8" />
+                                                        <div>
+                                                            <p className="text-[9px] uppercase tracking-widest font-bold text-background-dark/40 mb-1.5">Top drivers</p>
+                                                            <div className="space-y-1.5">
+                                                                {actionSummary.drivers.slice(0, 2).map((driver) => (
+                                                                    <div key={driver.code} className="rounded-lg border border-background-dark/10 bg-white/80 px-2.5 py-1.5">
+                                                                        <p className="text-[11px] font-bold text-background-dark">{driver.label}</p>
+                                                                        <p className="text-[10px] text-background-dark/55 mt-0.5">{driver.detail}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Vitals mini-grid */}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {[
+                                                    { label: 'Heart Rate', value: liveVitals.heartRate, unit: 'bpm', Icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
+                                                    { label: 'HRV', value: liveVitals.hrv, unit: 'ms', Icon: Zap, color: 'text-violet-500', bg: 'bg-violet-50' },
+                                                    { label: 'SpO₂', value: liveVitals.spO2, unit: '%', Icon: Droplets, color: 'text-sky-500', bg: 'bg-sky-50' },
+                                                    { label: 'Skin Temp', value: liveVitals.skinTemp?.toFixed(1), unit: '°C', Icon: Thermometer, color: 'text-amber-500', bg: 'bg-amber-50' },
+                                                ].map(({ label, value, unit, Icon, color, bg }) => (
+                                                    <div key={label} className="bg-white rounded-xl border border-background-dark/8 px-3 py-2 flex items-center gap-2">
+                                                        <div className={`p-1.5 rounded-lg ${bg}`}>
+                                                            <Icon className={`w-3.5 h-3.5 ${color}`} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-[9px] uppercase tracking-wider font-bold text-background-dark/40 truncate">{label}</p>
+                                                            <p className="text-base font-black text-background-dark leading-none mt-0.5">
+                                                                {value || '–'}<span className="text-[10px] font-semibold text-background-dark/50 ml-0.5">{unit}</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Signal quality footer */}
+                                            <div className="flex items-center gap-1.5 text-[10px] text-background-dark/40 font-medium mt-auto pt-1">
+                                                <span className="relative flex h-1.5 w-1.5">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+                                                </span>
+                                                Signal: {actionSummary.signal_quality} · {(actionSummary.signal_confidence * 100).toFixed(0)}% confidence
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* AI Nudge overlay (both mobile and desktop) */}
+                                {showNudge && nudge && (
+                                    <div
+                                        className="absolute inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4"
+                                        onClick={() => setShowNudge(false)}
+                                    >
+                                        <div className="w-full max-w-md max-h-[90%] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                            <NudgePanel
+                                                nudge={nudge}
+                                                isLoading={isLoadingNudge}
+                                                onRefresh={fetchNudge}
+                                                onClose={() => setShowNudge(false)}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>
