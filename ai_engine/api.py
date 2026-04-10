@@ -85,6 +85,13 @@ class PredictionResponse:
     projected_resting_hr_increase_bpm: float
     current_risk_category: str
     projected_risk_category: str
+    prediction_source: str = "engine_projection"
+    prediction_horizon_days: int = 90
+    prediction_horizon_hours: int = 2160
+    confidence: float = 0.0
+    best_case_score: Optional[float] = None
+    worst_case_score: Optional[float] = None
+    trend_direction: Optional[str] = None
     disclaimer: str = "Statistical projection only. Not a medical diagnosis."
 
 
@@ -160,6 +167,10 @@ class CardioTwinAPI:
         "spo2": "Low SpO2",
         "temperature": "Temperature deviation",
     }
+
+    PREDICTION_DEFAULT_DAYS = 90
+    PREDICTION_MIN_DAYS = 1
+    PREDICTION_MAX_DAYS = 180
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
@@ -192,6 +203,27 @@ class CardioTwinAPI:
         if level == "medium":
             return 0.65
         return 0.4
+
+    def _normalize_prediction_days(self, days: Optional[int]) -> int:
+        try:
+            parsed_days = int(days) if days is not None else self.PREDICTION_DEFAULT_DAYS
+        except (TypeError, ValueError):
+            return self.PREDICTION_DEFAULT_DAYS
+
+        if parsed_days < self.PREDICTION_MIN_DAYS:
+            return self.PREDICTION_MIN_DAYS
+        if parsed_days > self.PREDICTION_MAX_DAYS:
+            return self.PREDICTION_MAX_DAYS
+        return parsed_days
+
+    def _risk_category_from_score(self, score: float) -> str:
+        if score >= 80:
+            return "Thriving"
+        if score >= 55:
+            return "Mild Strain"
+        if score >= 30:
+            return "Elevated Risk"
+        return "Critical Strain"
 
     def _build_action_summary(
         self,
@@ -654,6 +686,9 @@ class CardioTwinAPI:
         Returns:
             Projection response per PRD format.
         """
+        prediction_days = self._normalize_prediction_days(days)
+        horizon_hours = prediction_days * 24
+
         current_score = self.engine.get_current_score(session_id)
         
         if current_score is None or current_score == 0:
@@ -663,14 +698,26 @@ class CardioTwinAPI:
             }
         
         # Project risk using engine
-        projection = self.engine.project_risk(session_id, hours_ahead=days * 24)
+        projection = self.engine.project_risk(session_id, hours_ahead=horizon_hours)
+        prediction_source = "engine_projection"
+        confidence = 0.35
+        trend_direction = "unknown"
+        best_case_score = None
+        worst_case_score = None
         
         if not projection:
             # Fallback: simple trend extrapolation
-            projected_score = max(0, current_score - (days * 0.1))
+            projected_score = max(0.0, current_score - (prediction_days * 0.1))
+            prediction_source = "fallback_trend"
+            best_case_score = min(100.0, projected_score + 5.0)
+            worst_case_score = max(0.0, projected_score - 5.0)
         else:
             # Use engine projection (average of projected scores)
             projected_score = sum(projection.projected_scores) / len(projection.projected_scores)
+            confidence = projection.trend.confidence if hasattr(projection.trend, "confidence") else 0.7
+            trend_direction = projection.trend.value if hasattr(projection.trend, "value") else str(projection.trend)
+            best_case_score = projection.best_case_score
+            worst_case_score = projection.worst_case_score
         
         # Apply scenario-based adjustments if provided
         scenario_impact = 0.0
@@ -711,7 +758,7 @@ class CardioTwinAPI:
                     scenario_note = "Stress management practices benefit heart health"
             
             # Apply gradual impact based on time frame
-            time_factor = min(days / 90.0, 1.0)  # Full impact at 90 days
+            time_factor = min(prediction_days / 90.0, 1.0)  # Full impact at 90 days
             projected_score += (scenario_impact * time_factor)
             projected_score = min(100, projected_score)  # Cap at 100
         
@@ -719,23 +766,19 @@ class CardioTwinAPI:
         score_delta = current_score - projected_score
         hr_increase = score_delta * 0.15  # Approximate correlation
         
-        # Determine risk categories
-        def get_category(score: float) -> str:
-            if score >= 80:
-                return "Thriving"
-            elif score >= 55:
-                return "Mild Strain"
-            elif score >= 30:
-                return "Elevated Risk"
-            else:
-                return "Critical Strain"
-        
         response = {
-            "current_score": round(current_score, 1),
-            "projected_score": round(projected_score, 1),
-            "projected_resting_hr_increase_bpm": round(hr_increase, 1),
-            "current_risk_category": get_category(current_score),
-            "projected_risk_category": get_category(projected_score),
+            "current_score": round(float(current_score), 1),
+            "projected_score": round(float(projected_score), 1),
+            "projected_resting_hr_increase_bpm": round(float(hr_increase), 1),
+            "current_risk_category": self._risk_category_from_score(float(current_score)),
+            "projected_risk_category": self._risk_category_from_score(float(projected_score)),
+            "prediction_source": prediction_source,
+            "prediction_horizon_days": prediction_days,
+            "prediction_horizon_hours": horizon_hours,
+            "confidence": round(float(confidence), 2),
+            "best_case_score": round(float(best_case_score), 1) if best_case_score is not None else None,
+            "worst_case_score": round(float(worst_case_score), 1) if worst_case_score is not None else None,
+            "trend_direction": trend_direction,
             "disclaimer": "Statistical projection only. Not a medical diagnosis.",
         }
         
