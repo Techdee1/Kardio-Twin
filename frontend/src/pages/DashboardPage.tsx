@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check, Heart, Zap, Droplets, Thermometer } from 'lucide-react';
+import { Activity, Bell, BrainCircuit, Sparkles, Globe, Check, Heart, Zap, Droplets, Thermometer, WifiOff, RefreshCw } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import NudgePanel from '../components/dashboard/NudgePanel';
@@ -176,6 +176,8 @@ export default function DashboardPage() {
 
     const [calibration, setCalibration] = useState<{ active: boolean, progress: number }>({ active: true, progress: 0 });
     const [actionSummary, setActionSummary] = useState<ActionSummary>(DEFAULT_ACTION_SUMMARY);
+    // null = initial check in progress, false = no readings yet (device not sending), true = live
+    const [hardwareConnected, setHardwareConnected] = useState<boolean | null>(null);
 
     const applyProvisionalManualVitals = useCallback((submittedVitals: ManualSubmittedVitals) => {
         setLiveVitals(prev => ({
@@ -189,19 +191,21 @@ export default function DashboardPage() {
     }, []);
 
     useEffect(() => {
-        if (selectedMode !== 'manual') {
-            return;
-        }
+        // Reset hardware connection state whenever the mode changes
+        setHardwareConnected(null);
 
-        setLiveVitals(defaultVitals);
-        setCalibration({ active: true, progress: 0 });
-        setActionSummary({
-            ...DEFAULT_ACTION_SUMMARY,
-            status: 'Manual mode',
-            why: 'Enter a manual reading to update the monitor.',
-            next_step: 'Submit a manual reading below.',
-            advice_strength: 'calibration',
-        });
+        if (selectedMode === 'manual') {
+            setActiveView('manual');
+            setLiveVitals(defaultVitals);
+            setCalibration({ active: true, progress: 0 });
+            setActionSummary({
+                ...DEFAULT_ACTION_SUMMARY,
+                status: 'Manual mode',
+                why: 'Enter a manual reading to update the monitor.',
+                next_step: 'Submit a manual reading below.',
+                advice_strength: 'calibration',
+            });
+        }
     }, [selectedMode]);
 
     // Handle reading response from sensor simulator
@@ -258,8 +262,9 @@ export default function DashboardPage() {
 
         const pollScore = async () => {
             try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const data: ScoreResponse = await api.getScore(sessionId);
+                const data: ScoreResponse = await api.getScore(sessionId!);
+                // Any successful response means the device is sending data
+                setHardwareConnected(true);
 
                 if (data.status === 'calibrating') {
                     requestSourceSwitch(data.source || 'hardware');
@@ -285,19 +290,14 @@ export default function DashboardPage() {
                     setActionSummary(getActionSummaryFromResponse(data));
                 }
             } catch (err) {
-                const message = err instanceof Error ? err.message : String(err);
-                console.error(`[CardioTwin] Score API failed: ${message}. Falling back to mock data.`);
-                // Graceful fallback mock data
-                setCalibration({ active: false, progress: 1 });
-                setLiveVitals({
-                    heartRate: 62 + Math.floor(Math.random() * 5),
-                    hrv: 58 + Math.floor(Math.random() * 4),
-                    spO2: 98 + Math.floor(Math.random() * 2),
-                    skinTemp: 36.4 + Math.random() * 0.4,
-                    score: 94,
-                    trend: 'Thriving'
-                });
-                setActionSummary(DEFAULT_ACTION_SUMMARY);
+                const status = (err as any)?.status;
+                if (status === 404) {
+                    // 404 = session exists but no readings yet — device not sending
+                    setHardwareConnected(false);
+                } else {
+                    // Network / server error — don't flip connection state
+                    console.error(`[CardioTwin] Score API failed: ${err instanceof Error ? err.message : err}`);
+                }
             }
         };
 
@@ -422,7 +422,36 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="flex-1 min-h-0 relative bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-primary/10 overflow-hidden">
-                                {calibration.active ? (
+                                {/* ── Hardware not connected state ── */}
+                                {(selectedMode === 'hardware' || selectedMode === 'hybrid') && hardwareConnected === false ? (
+                                    <div className="absolute inset-0 bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_48%,#f9fcff_100%)] flex items-center justify-center">
+                                        <div className="flex flex-col items-center max-w-sm w-full p-6 sm:p-8 mx-4 text-center bg-white/90 backdrop-blur-md rounded-2xl border border-background-dark/10 shadow-xl">
+                                            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-5 border border-slate-200">
+                                                <WifiOff className="w-7 h-7 text-slate-400" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-background-dark mb-1">Hardware Not Connected</h3>
+                                            <p className="text-background-dark/55 text-sm font-medium mb-5 leading-relaxed">
+                                                No readings received yet. Make sure your ESP32 is powered on, connected to Wi-Fi, and posting to this session.
+                                            </p>
+                                            <div className="w-full bg-background-light rounded-xl p-3 border border-background-dark/8 text-left mb-5">
+                                                <p className="text-[9px] uppercase tracking-widest font-bold text-background-dark/40 mb-1">Session ID (set on device)</p>
+                                                <p className="text-xs font-mono font-bold text-background-dark break-all select-all">{sessionId}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-background-dark/40 font-semibold">
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                Checking for device every 2 s…
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (selectedMode === 'hardware' || selectedMode === 'hybrid') && hardwareConnected === null ? (
+                                    /* ── Initial check (first poll not yet returned) ── */
+                                    <div className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_48%,#f9fcff_100%)]">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <RefreshCw className="w-6 h-6 text-primary animate-spin" />
+                                            <p className="text-sm font-semibold text-background-dark/50">Checking for device…</p>
+                                        </div>
+                                    </div>
+                                ) : calibration.active ? (
                                     /* ── Calibration State ── */
                                     <div className="absolute inset-0 bg-[linear-gradient(160deg,#f8fbfd_0%,#eff6f8_48%,#f9fcff_100%)] flex items-center justify-center">
                                         <div className="flex flex-col items-center max-w-sm w-full p-6 sm:p-8 mx-4 text-center bg-white/90 backdrop-blur-md rounded-2xl border border-primary/20 shadow-xl">
@@ -640,32 +669,21 @@ export default function DashboardPage() {
                                 requestSourceSwitch(result?.source || 'manual');
                                 applyProvisionalManualVitals(submittedVitals);
 
-                                if (result.status === 'calibrating') {
-                                    setCalibration({
-                                        active: true,
-                                        progress: (result.readings_collected || 0) / (result.readings_needed || 5)
-                                    });
+                                if (result.status === 'scored') {
+                                    if (result.components) {
+                                        setCalibration({ active: false, progress: 1 });
+                                        setLiveVitals({
+                                            heartRate: Math.round(result.components.heart_rate.value),
+                                            hrv: Math.round(result.components.hrv.value),
+                                            spO2: Math.round(result.components.spo2.value),
+                                            skinTemp: result.components.temperature.value,
+                                            score: Math.round(result.score),
+                                            trend: result.zone_label || 'Optimal',
+                                        });
+                                    }
                                     setActionSummary(getActionSummaryFromResponse(result));
-                                    return;
-                                }
-
-                                if (result.status === 'retake_requested') {
-                                    setActionSummary(getActionSummaryFromResponse(result));
-                                    return;
-                                }
-
-                                if (result.status === 'scored' && result.components) {
-                                    setCalibration({ active: false, progress: 1 });
-                                    setLiveVitals({
-                                        heartRate: Math.round(result.components.heart_rate.value),
-                                        hrv: Math.round(result.components.hrv.value),
-                                        spO2: Math.round(result.components.spo2.value),
-                                        skinTemp: result.components.temperature.value,
-                                        score: Math.round(result.score),
-                                        trend: result.zone_label || 'Optimal',
-                                    });
-                                    setActionSummary(getActionSummaryFromResponse(result));
-                                    setActiveView('overview');
+                                    // Brief pause so the "Baseline set" success card is visible
+                                    setTimeout(() => setActiveView('overview'), 1400);
                                 }
                             }} />
                         </div>
