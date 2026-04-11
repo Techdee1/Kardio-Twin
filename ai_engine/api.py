@@ -701,18 +701,171 @@ class CardioTwinAPI:
             })
         
         return history
-    
+
+    # ── Scenario keyword table ────────────────────────────────────────────────
+    # Each entry: (keywords, score_impact, hr_delta, hrv_delta, spo2_delta, temp_delta, note)
+    _SCENARIO_TABLE = [
+        (["stop smoking","quit smoking","no cigarette","quit tobacco"],
+         +15.0,-8,+12,+1.5,-0.2,
+         "Quitting smoking is the single biggest cardiovascular intervention possible."),
+        (["start smoking","smoke again","began smoking"],
+         -18.0,+10,-15,-2.0,+0.3,
+         "Smoking severely damages vascular endothelium and raises resting heart rate."),
+        (["jog","jogging","run","running","cardio","aerobic"],
+         +12.0,-5,+10,+0.5,-0.1,
+         "Aerobic exercise is one of the most effective cardiovascular interventions."),
+        (["gym","lift","weight training","strength training","resistance"],
+         +9.0,-4,+8,+0.3,-0.1,
+         "Resistance training improves cardiac output and reduces resting HR over time."),
+        (["walk","walking","step","steps"],
+         +7.0,-3,+6,+0.3,-0.1,
+         "Even moderate daily walking significantly lowers cardiovascular risk."),
+        (["yoga","pilates","stretch","meditat","mindful","deep breath","relax"],
+         +5.5,-3,+6,+0.2,-0.1,
+         "Mind-body practices reduce cortisol and support heart rate variability."),
+        (["sedentary","sit all day","less active","stop exercising","couch"],
+         -8.0,+5,-8,-0.5,+0.1,
+         "Prolonged inactivity raises resting HR and reduces HRV."),
+        (["oil","fried","fry","greasy","oily","fatty food","junk food","fast food"],
+         -7.0,+4,-6,-0.5,+0.1,
+         "Excessive saturated/trans fats raise LDL, promote inflammation and arterial stiffness."),
+        (["reduce sugar","cut sugar","no sugar","less sugar","stop sugar"],
+         +8.5,-4,+7,+0.4,-0.1,
+         "Reducing added sugar lowers inflammation and improves metabolic cardiovascular risk."),
+        (["sugar","sweet","candy","soda","fizzy","dessert"],
+         -6.0,+3,-5,-0.3,+0.1,
+         "High sugar intake drives insulin resistance and systemic inflammation."),
+        (["reduce salt","less salt","low sodium","cut salt"],
+         +5.0,-3,+4,+0.2,0.0,
+         "Lower sodium intake directly reduces blood pressure."),
+        (["salt","sodium","salty"],
+         -5.0,+3,-4,-0.2,0.0,
+         "Excess sodium raises blood pressure, increasing cardiac workload."),
+        (["vegetable","fruit","fiber","plant-based","salad","whole grain"],
+         +6.5,-3,+6,+0.3,-0.1,
+         "Plant-rich diets reduce cardiovascular risk through fibre, antioxidants and potassium."),
+        (["stop alcohol","quit alcohol","no alcohol","reduce drinking","sober"],
+         +6.0,-3,+5,+0.3,-0.1,
+         "Reducing alcohol lowers blood pressure and improves HRV within weeks."),
+        (["alcohol","drink beer","wine","spirits","liquor"],
+         -6.0,+3,-5,-0.3,+0.1,
+         "Regular alcohol elevates blood pressure and disrupts heart rhythm."),
+        (["water","hydrat","drink more water"],
+         +4.0,-2,+3,+0.2,-0.1,
+         "Proper hydration supports blood viscosity and cardiac efficiency."),
+        (["sleep","rest","insomnia"],
+         +7.0,-4,+7,+0.2,-0.1,
+         "Adequate sleep is critical for autonomic nervous system recovery (HRV)."),
+        (["stress","anxiet","overwork","burnout"],
+         -7.0,+5,-8,-0.3,+0.2,
+         "Chronic stress elevates cortisol, suppresses HRV and raises resting HR."),
+        (["medication","medicine","drug","supplement"],
+         0.0,0,0,0.0,0.0,
+         "Medication effects vary widely — always consult your doctor about cardiovascular implications."),
+    ]
+
+    def _parse_scenario(self, scenario: str):
+        sl = scenario.lower()
+        for entry in self._SCENARIO_TABLE:
+            keywords, si, hr, hrv_d, spo2, temp, note = entry
+            if any(kw in sl for kw in keywords):
+                return si, float(hr), float(hrv_d), float(spo2), float(temp), note, True
+        return 0.0, 0.0, 0.0, 0.0, 0.0, "", False
+
+    def _groq_scenario_review(self, scenario, current_score, current_hr,
+                               current_hrv, current_spo2, current_temp, days,
+                               score_impact) -> str:
+        import os, httpx, asyncio
+
+        api_key = os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            return self._template_scenario_review(scenario, current_score, score_impact, days)
+
+        system = (
+            "You are a cardiovascular wellness AI. Provide educational, evidence-based guidance "
+            "on how lifestyle factors affect heart health. RULES: Never diagnose. Never name diseases. "
+            "Never recommend stopping medication. Frame everything as wellness education. "
+            "Be specific and cite approximate timeframes. Keep under 250 words. "
+            "Structure in 3 short sections: "
+            "1) Impact Summary (2-3 sentences), "
+            "2) Expected Vital Changes (bullet list: Heart Rate, HRV, SpO2), "
+            "3) Practical Steps (2-3 bullets). No disclaimer."
+        )
+        direction = "positive" if score_impact >= 0 else "negative"
+        user_msg = (
+            f'User question: "{scenario}"\n\n'
+            f"Current wellness: Score {current_score:.0f}/100 | "
+            f"HR {current_hr:.0f} bpm | HRV {current_hrv:.0f} ms | "
+            f"SpO₂ {current_spo2:.0f}% | Temp {current_temp:.1f}°C\n"
+            f"Projection horizon: {days} days | "
+            f"Estimated impact: {direction} ({abs(score_impact):.1f} pts)\n\n"
+            "Write a comprehensive cardiovascular wellness review."
+        )
+
+        async def _call():
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                r = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user_msg},
+                        ],
+                        "max_tokens": 450,
+                        "temperature": 0.5,
+                    },
+                )
+                r.raise_for_status()
+                return r.json()["choices"][0]["message"]["content"].strip()
+
+        try:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as pool:
+                        raw = pool.submit(asyncio.run, _call()).result(timeout=18)
+                else:
+                    raw = loop.run_until_complete(_call())
+            except RuntimeError:
+                raw = asyncio.run(_call())
+
+            validated = validate_llm_output(raw)
+            return validated if validated else self._template_scenario_review(scenario, current_score, score_impact, days)
+        except Exception as exc:
+            print(f"[CardioTwin] Scenario LLM failed: {exc}")
+            return self._template_scenario_review(scenario, current_score, score_impact, days)
+
+    def _template_scenario_review(self, scenario, current_score, score_impact, days) -> str:
+        d = "improve" if score_impact > 0 else ("worsen" if score_impact < 0 else "not significantly change")
+        m = "significantly" if abs(score_impact) >= 10 else ("moderately" if abs(score_impact) >= 5 else "mildly")
+        return (
+            f"**Impact Summary**\n"
+            f"Based on cardiovascular research, this change is expected to {m} {d} your heart health "
+            f"over {days} days.\n\n"
+            f"**Expected Vital Changes**\n"
+            f"- Heart Rate: {'↓ likely to decrease' if score_impact > 0 else '↑ may increase'}\n"
+            f"- HRV: {'↑ likely to improve' if score_impact > 0 else '↓ may decrease'}\n"
+            f"- SpO₂: {'Stable to slightly improved' if score_impact > 0 else 'Stable'}\n\n"
+            f"**Practical Steps**\n"
+            f"- Track your vitals daily to observe changes\n"
+            f"- Combine this with adequate sleep (7-8 hrs) for best effect\n"
+            f"- Consult a healthcare professional before major lifestyle changes"
+        )
+
     def predict(self, session_id: str, days: int = 90, scenario: str = None) -> Dict[str, Any]:
         """
         What-if risk projection.
-        
+
         PRD Endpoint: POST /api/predict
-        
+
         Args:
             session_id: Session to project from
             days: Days to project ahead (default 90)
             scenario: Optional lifestyle scenario (e.g., "stop taking sugar")
-        
+
         Returns:
             Projection response per PRD format.
         """
@@ -720,13 +873,13 @@ class CardioTwinAPI:
         horizon_hours = prediction_days * 24
 
         current_score = self.engine.get_current_score(session_id)
-        
+
         if current_score is None or current_score == 0:
             return {
                 "status": "error",
                 "message": "Not enough data for projection",
             }
-        
+
         # Project risk using engine
         projection = self.engine.project_risk(session_id, hours_ahead=horizon_hours)
         prediction_source = "engine_projection"
@@ -734,16 +887,14 @@ class CardioTwinAPI:
         trend_direction = "unknown"
         best_case_score = None
         worst_case_score = None
-        
+
         if not projection:
-            # Fallback: simple trend extrapolation
             projected_score = max(0.0, current_score - (prediction_days * 0.1))
             prediction_source = "fallback_trend"
             best_case_score = min(100.0, projected_score + 5.0)
             worst_case_score = max(0.0, projected_score - 5.0)
             projected_score_average = projected_score
         else:
-            # Use the projection value at the requested horizon.
             horizon_index = max(0, min(len(projection.projected_scores) - 1, horizon_hours - 1))
             projected_score = projection.projected_scores[horizon_index]
             projected_score_average = sum(projection.projected_scores) / len(projection.projected_scores)
@@ -751,54 +902,69 @@ class CardioTwinAPI:
             trend_direction = projection.trend.value if hasattr(projection.trend, "value") else str(projection.trend)
             best_case_score = projection.best_case_score
             worst_case_score = projection.worst_case_score
-        
-        # Apply scenario-based adjustments if provided
+
+        # ── Get current vitals from latest reading for projection base ──
+        current_hr, current_hrv, current_spo2, current_temp = 72.0, 50.0, 97.0, 36.6
+        try:
+            session = self.engine.get_session(session_id)
+            if session and session.readings:
+                r = session.readings[-1]
+                current_hr = float(r.heart_rate) if r.heart_rate else current_hr
+                current_hrv = float(r.hrv) if r.hrv else current_hrv
+                current_spo2 = float(r.spo2) if r.spo2 else current_spo2
+                current_temp = float(r.temperature) if r.temperature else current_temp
+        except Exception:
+            pass
+
+        # ── Parse scenario ──
         scenario_impact = 0.0
         scenario_note = ""
+        hr_delta = 0.0
+        hrv_delta = 0.0
+        spo2_delta = 0.0
+        temp_delta = 0.0
+        ai_review = None
+
         if scenario:
-            scenario_lower = scenario.lower()
-            
-            # Parse scenario and estimate impact on score
-            if any(word in scenario_lower for word in ['stop', 'quit', 'reduce', 'cut', 'avoid']):
-                if any(word in scenario_lower for word in ['sugar', 'sweet', 'carb', 'soda', 'candy']):
-                    scenario_impact = 8.5  # Positive impact from reducing sugar
-                    scenario_note = "Reducing sugar intake typically improves metabolic health"
-                elif any(word in scenario_lower for word in ['smoking', 'smoke', 'cigarette', 'tobacco']):
-                    scenario_impact = 15.0  # Major positive impact from quitting smoking
-                    scenario_note = "Quitting smoking has significant cardiovascular benefits"
-                elif any(word in scenario_lower for word in ['alcohol', 'drink', 'beer', 'wine']):
-                    scenario_impact = 6.0  # Positive impact from reducing alcohol
-                    scenario_note = "Reducing alcohol improves heart health"
-                elif any(word in scenario_lower for word in ['salt', 'sodium']):
-                    scenario_impact = 5.0  # Positive impact from reducing salt
-                    scenario_note = "Lower sodium intake reduces blood pressure"
-            
-            elif any(word in scenario_lower for word in ['start', 'begin', 'increase', 'add', 'more']):
-                if any(word in scenario_lower for word in ['exercise', 'workout', 'gym', 'run', 'walk', 'jog']):
-                    scenario_impact = 12.0  # Major positive impact from exercise
-                    scenario_note = "Regular exercise significantly improves cardiovascular health"
-                elif any(word in scenario_lower for word in ['sleep', 'rest']):
-                    scenario_impact = 7.0  # Positive impact from better sleep
-                    scenario_note = "Adequate sleep is crucial for heart health"
-                elif any(word in scenario_lower for word in ['water', 'hydrat']):
-                    scenario_impact = 4.0  # Moderate positive impact from hydration
-                    scenario_note = "Proper hydration supports cardiovascular function"
-                elif any(word in scenario_lower for word in ['vegetable', 'fruit', 'fiber']):
-                    scenario_impact = 6.5  # Positive impact from better diet
-                    scenario_note = "Plant-based foods reduce cardiovascular risk"
-                elif any(word in scenario_lower for word in ['meditat', 'yoga', 'mindful']):
-                    scenario_impact = 5.5  # Positive impact from stress reduction
-                    scenario_note = "Stress management practices benefit heart health"
-            
+            si, hr_d, hrv_d, spo2_d, temp_d, note, matched = self._parse_scenario(scenario)
+            if matched:
+                scenario_impact = si
+                hr_delta = hr_d
+                hrv_delta = hrv_d
+                spo2_delta = spo2_d
+                temp_delta = temp_d
+                scenario_note = note
+            else:
+                # Unknown scenario — still try LLM, use zero deltas
+                scenario_note = f"Scenario: {scenario}"
+
             # Apply gradual impact based on time frame
-            time_factor = min(prediction_days / 90.0, 1.0)  # Full impact at 90 days
-            projected_score += (scenario_impact * time_factor)
-            projected_score = min(100, projected_score)  # Cap at 100
-        
-        # Calculate projected HR increase (rough estimate)
+            time_factor = min(prediction_days / 90.0, 1.0)
+            projected_score = min(100.0, projected_score + (scenario_impact * time_factor))
+
+            # Generate AI review
+            ai_review = self._groq_scenario_review(
+                scenario=scenario,
+                current_score=float(current_score),
+                current_hr=current_hr,
+                current_hrv=current_hrv,
+                current_spo2=current_spo2,
+                current_temp=current_temp,
+                days=prediction_days,
+                score_impact=scenario_impact,
+            )
+
+        # ── Score delta ──
         score_delta = current_score - projected_score
-        hr_increase = score_delta * 0.15  # Approximate correlation
-        
+        hr_increase = score_delta * 0.15  # approximate correlation
+
+        # ── Build projected vitals ──
+        time_factor = min(prediction_days / 90.0, 1.0)
+        projected_hr = round(current_hr + hr_delta * time_factor, 1)
+        projected_hrv = round(max(0.0, current_hrv + hrv_delta * time_factor), 1)
+        projected_spo2 = round(min(100.0, max(70.0, current_spo2 + spo2_delta * time_factor)), 1)
+        projected_temp = round(current_temp + temp_delta * time_factor, 1)
+
         response = {
             "current_score": round(float(current_score), 1),
             "projected_score": round(float(projected_score), 1),
@@ -814,14 +980,33 @@ class CardioTwinAPI:
             "projected_score_average": round(float(projected_score_average), 1),
             "trend_direction": trend_direction,
             "disclaimer": "Statistical projection only. Not a medical diagnosis.",
+            "current_vitals": {
+                "bpm": current_hr,
+                "hrv": current_hrv,
+                "spo2": current_spo2,
+                "temperature": current_temp,
+            },
+            "projected_vitals": {
+                "bpm": projected_hr,
+                "hrv": projected_hrv,
+                "spo2": projected_spo2,
+                "temperature": projected_temp,
+            },
+            "projected_vitals_delta": {
+                "bpm": round(hr_delta * time_factor, 1),
+                "hrv": round(hrv_delta * time_factor, 1),
+                "spo2": round(spo2_delta * time_factor, 1),
+                "temperature": round(temp_delta * time_factor, 1),
+            },
         }
-        
-        # Add scenario note if applicable
+
         if scenario_note:
             response["scenario_note"] = scenario_note
-        
+        if ai_review:
+            response["ai_review"] = ai_review
+
         return response
-    
+
     def get_nudge_message(self, session_id: str) -> Dict[str, Any]:
         """
         Get the nudge message for WhatsApp/SMS delivery.

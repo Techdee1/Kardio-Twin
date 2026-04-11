@@ -109,6 +109,13 @@ export interface PredictionRequest {
     scenario?: string;
 }
 
+export interface VitalsSnapshot {
+    bpm: number;
+    hrv: number;
+    spo2: number;
+    temperature: number;
+}
+
 export interface PredictionResponse {
     current_score: number;
     projected_score: number;
@@ -117,6 +124,10 @@ export interface PredictionResponse {
     projected_risk_category: string;
     disclaimer: string;
     scenario_note?: string;
+    ai_review?: string;
+    current_vitals?: VitalsSnapshot;
+    projected_vitals?: VitalsSnapshot;
+    projected_vitals_delta?: VitalsSnapshot;
 }
 
 export interface NudgeResponse {
