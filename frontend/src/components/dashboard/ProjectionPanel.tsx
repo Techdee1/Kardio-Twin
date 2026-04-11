@@ -49,7 +49,7 @@ function DeltaBadge({ delta, unit = '', isPositiveGood = true }: { delta: number
 
 /** Minimal markdown → JSX: bold, bullet lists, line breaks */
 function SimpleMarkdown({ text }: { text: string }) {
-    const lines = text.split('\n');
+    const lines = String(text || '').split('\n');
     return (
         <div className="space-y-1.5">
             {lines.map((line, i) => {
@@ -89,6 +89,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
     const [error, setError] = useState<string | null>(null);
     const [days, setDays] = useState(30);
     const [scenario, setScenario] = useState('');
+    const [supportsWebGL, setSupportsWebGL] = useState(false);
     const { t } = useLanguage();
 
     const fetchPrediction = async (nextDays = days, nextScenario = scenario) => {
@@ -112,6 +113,20 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
         fetchPrediction();
     }, [sessionId]);
 
+    useEffect(() => {
+        const detectWebGL = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                return Boolean(context);
+            } catch {
+                return false;
+            }
+        };
+
+        setSupportsWebGL(detectWebGL());
+    }, []);
+
     const currentZone = zoneFromScore(currentScore);
     const projectedZone = prediction ? zoneFromScore(prediction.projected_score) : 'GREEN';
     const scoreChange = prediction ? prediction.projected_score - prediction.current_score : 0;
@@ -133,6 +148,38 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
 
     const handleAnalyze = () => {
         void fetchPrediction();
+    };
+
+    const renderAvatarPreview = (
+        score: number,
+        vitals: { heartRate: number; hrv: number; spO2: number; skinTemp: number },
+        projected = false,
+    ) => {
+        if (!supportsWebGL) {
+            return (
+                <div className="h-full w-full rounded-2xl bg-gradient-to-b from-background-light/70 to-white flex flex-col items-center justify-center px-4 text-center">
+                    <div className={`w-16 h-16 rounded-full border-2 ${projected ? 'border-purple-300 bg-purple-100' : 'border-background-dark/10 bg-white'} flex items-center justify-center mb-3`}>
+                        <span className={`text-xl font-black ${projected ? 'text-purple-600' : 'text-background-dark/70'}`}>{Math.round(score)}</span>
+                    </div>
+                    <p className="text-xs font-semibold text-background-dark/70">3D preview unavailable</p>
+                    <p className="mt-1 text-[11px] text-background-dark/45">
+                        {vitals.heartRate} bpm · {vitals.hrv} ms · {vitals.spO2}% · {vitals.skinTemp.toFixed(1)}°C
+                    </p>
+                </div>
+            );
+        }
+
+        return (
+            <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
+                <Suspense fallback={null}>
+                    <ambientLight intensity={projected ? 0.4 : 0.5} />
+                    <directionalLight position={[5, 5, 5]} intensity={projected ? 0.8 : 1} />
+                    <Environment preset="city" />
+                    <HealthAvatar score={score} vitals={vitals} />
+                    <OrbitControls enablePan={false} enableZoom={false} />
+                </Suspense>
+            </Canvas>
+        );
     };
 
     return (
@@ -227,15 +274,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                             <div className="text-center flex-1 w-full">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-background-dark/40">{t('projection.today')}</span>
                                 <div className="h-32 sm:h-40 w-full bg-gradient-to-b from-background-light/50 to-transparent rounded-2xl overflow-hidden">
-                                    <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
-                                        <Suspense fallback={null}>
-                                            <ambientLight intensity={0.5} />
-                                            <directionalLight position={[5, 5, 5]} intensity={1} />
-                                            <Environment preset="city" />
-                                            <HealthAvatar score={currentScore} vitals={currentVitals} />
-                                            <OrbitControls enablePan={false} enableZoom={false} />
-                                        </Suspense>
-                                    </Canvas>
+                                    {renderAvatarPreview(currentScore, currentVitals)}
                                 </div>
                                 <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mt-2 ${zoneColors[currentZone].badge} ${zoneColors[currentZone].border} border`}>
                                     <span className={`text-lg font-black ${zoneColors[currentZone].text}`}>{Math.round(prediction.current_score)}</span>
@@ -256,15 +295,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                                     <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent pointer-events-none z-10" />
                                     <div className="absolute inset-0 opacity-20 pointer-events-none z-10"
                                          style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(147,51,234,0.1) 2px, rgba(147,51,234,0.1) 4px)' }} />
-                                    <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
-                                        <Suspense fallback={null}>
-                                            <ambientLight intensity={0.4} />
-                                            <directionalLight position={[5, 5, 5]} intensity={0.8} />
-                                            <Environment preset="city" />
-                                            <HealthAvatar score={prediction.projected_score} vitals={projectedAvatarVitals} />
-                                            <OrbitControls enablePan={false} enableZoom={false} />
-                                        </Suspense>
-                                    </Canvas>
+                                    {renderAvatarPreview(prediction.projected_score, projectedAvatarVitals, true)}
                                 </div>
                                 <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mt-2 ${zoneColors[projectedZone].badge} ${zoneColors[projectedZone].border} border`}>
                                     <span className={`text-lg font-black ${zoneColors[projectedZone].text}`}>{Math.round(prediction.projected_score)}</span>
