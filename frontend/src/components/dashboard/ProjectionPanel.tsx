@@ -91,14 +91,14 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
     const [scenario, setScenario] = useState('');
     const { t } = useLanguage();
 
-    const fetchPrediction = async () => {
+    const fetchPrediction = async (nextDays = days, nextScenario = scenario) => {
         setIsLoading(true);
         setError(null);
         try {
             const data = await api.getPrediction({
                 session_id: sessionId,
-                days,
-                scenario: scenario.trim() || undefined,
+                days: nextDays,
+                scenario: nextScenario.trim() || undefined,
             });
             setPrediction(data);
         } catch (err) {
@@ -118,6 +118,22 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
     const isImproving = scoreChange >= 0;
 
     const delta = prediction?.projected_vitals_delta;
+    const hasScenarioAnalysis = Boolean(scenario.trim()) || Boolean(prediction?.scenario_note) || Boolean(prediction?.ai_review);
+    const mapVitalsToAvatar = (vitals?: PredictionResponse['current_vitals']) => ({
+        heartRate: vitals?.bpm ?? currentVitals.heartRate,
+        hrv: vitals?.hrv ?? currentVitals.hrv,
+        spO2: vitals?.spo2 ?? currentVitals.spO2,
+        skinTemp: vitals?.temperature ?? currentVitals.skinTemp,
+    });
+    const projectedAvatarVitals = mapVitalsToAvatar(prediction?.projected_vitals);
+
+    const handleRefresh = () => {
+        void fetchPrediction();
+    };
+
+    const handleAnalyze = () => {
+        void fetchPrediction();
+    };
 
     return (
         <div className="h-full flex flex-col bg-white/80 backdrop-blur-md rounded-3xl border border-primary/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
@@ -134,7 +150,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                         </div>
                     </div>
                     <button
-                        onClick={fetchPrediction}
+                        onClick={handleRefresh}
                         disabled={isLoading}
                         className="p-2 rounded-lg hover:bg-background-light transition-colors"
                     >
@@ -147,7 +163,10 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                     {[7, 14, 30, 60].map((d) => (
                         <button
                             key={d}
-                            onClick={() => setDays(d)}
+                            onClick={() => {
+                                setDays(d);
+                                void fetchPrediction(d, scenario);
+                            }}
                             className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 days === d
                                     ? 'bg-primary text-white shadow-md'
@@ -169,12 +188,12 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                             type="text"
                             value={scenario}
                             onChange={(e) => setScenario(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') fetchPrediction(); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAnalyze(); }}
                             placeholder={t('projection.scenarioPlaceholder')}
                             className="flex-1 px-3 py-2 rounded-lg border border-background-dark/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         />
                         <button
-                            onClick={fetchPrediction}
+                            onClick={handleAnalyze}
                             disabled={isLoading}
                             className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                         >
@@ -191,7 +210,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                     <div className="flex flex-col items-center justify-center h-full text-center">
                         <AlertTriangle className="w-12 h-12 text-orange-400 mb-3" />
                         <p className="text-sm text-background-dark/60">{error}</p>
-                        <button onClick={fetchPrediction} className="mt-4 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium">
+                        <button onClick={handleRefresh} className="mt-4 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium">
                             {t('projection.retry')}
                         </button>
                     </div>
@@ -242,7 +261,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                                             <ambientLight intensity={0.4} />
                                             <directionalLight position={[5, 5, 5]} intensity={0.8} />
                                             <Environment preset="city" />
-                                            <HealthAvatar score={prediction.projected_score} vitals={currentVitals} />
+                                            <HealthAvatar score={prediction.projected_score} vitals={projectedAvatarVitals} />
                                             <OrbitControls enablePan={false} enableZoom={false} />
                                         </Suspense>
                                     </Canvas>
@@ -271,7 +290,7 @@ export default function ProjectionPanel({ sessionId, currentScore, currentVitals
                         </div>
 
                         {/* Per-vital projected delta — only shown when a scenario was analysed */}
-                        {delta && (
+                        {hasScenarioAnalysis && delta && (
                             <div className="rounded-2xl border border-background-dark/8 overflow-hidden">
                                 <div className="px-4 py-2.5 bg-background-light/60 border-b border-background-dark/8">
                                     <p className="text-[11px] font-black uppercase tracking-wide text-background-dark/50">Projected Vital Changes ({days}d)</p>
